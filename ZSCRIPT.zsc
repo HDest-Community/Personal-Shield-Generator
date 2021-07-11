@@ -1,0 +1,300 @@
+class HDPersonalShieldGenerator : HDWeapon
+{
+	enum PSProperty
+	{
+		PSProp_Flags,
+		PSProp_UseOffset,
+		PSProp_Battery1,
+		PSProp_Battery2,
+		PSProp_Battery3,
+		PSProp_ShieldRegenerated
+	}
+
+	action void A_AddOffset(int ofs)
+	{
+		invoker.WeaponStatus[PSProp_UseOffset] += ofs;
+	}
+
+	override bool AddSpareWeapon(actor newowner) { return AddSpareWeaponRegular(newowner); }
+	override HDWeapon GetSpareWeapon(actor newowner , bool reverse, bool doselect) { return GetSpareWeaponRegular(newowner, reverse, doselect); }
+	override string, double GetPickupSprite() { return GetBatteriesLoaded(true) > 0 ? "PSGND0" : "PSGNA0", 0.2; }
+	override string GetHelpText()
+	{
+		string BaseString = WEPHELP_RELOAD.."  Reload battery\n"
+		..WEPHELP_UNLOAD.."  Unload battery";
+		return BaseString;
+	}
+	override double WeaponBulk() { return 40 + GetBatteriesLoaded(false) * ENC_BATTERY_LOADED; }
+	override void InitializeWepStats(bool idfa)
+	{
+		WeaponStatus[PSProp_Battery1] = 20;
+		WeaponStatus[PSProp_Battery2] = 20;
+		WeaponStatus[PSProp_Battery3] = 20;
+	}
+
+	override int GetSbarNum(int flags)
+	{
+		let HDHud = HDStatusBar(StatusBar);
+		let shield = HDPersonalShield(FindInventory('HDPersonalShield'));
+		if (shield)
+		{
+			HDHud.SavedColour = shield.Amount > 0 ? Font.CR_GREEN : Font.CR_RED;
+			return max(0, shield.Amount);
+		}
+		return Super.GetSbarNum(flags);
+	}
+
+	override void AttachToOwner(Actor other)
+	{
+		let shield = HDPersonalShield(other.GiveInventoryType('HDPersonalShield'));
+		if (shield)
+		{
+			shield.Depleted = true;
+		}
+		Super.AttachToOwner(other);
+	}
+
+	override void DetachFromOwner()
+	{
+		let sld = owner.FindInventory('HDPersonalShield');
+		if (sld)
+		{
+			sld.Destroy();
+		}
+		Super.DetachFromOwner();
+	}
+
+	override void DoEffect()
+	{
+		if (WeaponStatus[PSProp_ShieldRegenerated] >= 500)
+		{
+			WeaponStatus[PSProp_ShieldRegenerated] -= 500;
+			for (int i = PSProp_Battery1; i <= PSProp_Battery3; ++i)
+			{
+				if (WeaponStatus[i] > 0)
+				{
+					WeaponStatus[i]--;
+				}
+			}
+		}
+
+		Super.DoEffect();
+	}
+
+	// [Ace] This should be clearscope, but for some reason LZDoom shits the bed so I can't test it.
+	int GetBatteriesLoaded(bool ignoreEmpty = false) const
+	{
+		int num = 0;
+		for (int i = PSProp_Battery1; i <= PSProp_Battery3; ++i)
+		{
+			if (WeaponStatus[i] > -1 && (ignoreEmpty || WeaponStatus[i] > 0))
+			{
+				num++;
+			}
+		}
+		return num;
+	}
+
+	private string GetBatteryIcon(int charge) const
+	{
+		if (charge > 13)
+		{
+			return "CELLA0";
+		}
+		else if (charge > 6)
+		{
+			return "CELLB0";
+		}
+		else if (charge > 0)
+		{
+			return "CELLC0";
+		}
+		else
+		{
+			return "CELLD0";
+		}
+	}
+
+	override void DrawHUDStuff(HDStatusBar sb, HDWeapon hdw, HDPlayerPawn hpl)
+	{
+		vector2 bob = hpl.hudbob * 0.3;
+		int Offset = WeaponStatus[PSProp_UseOffset];
+		bob.y += Offset;
+		int BaseYOffset = 0;
+		
+		sb.DrawImage(GetBatteriesLoaded(true) > 0 ? "PSGND0" : "PSGNA0", (0, BaseYOffset) + bob, sb.DI_SCREEN_CENTER | sb.DI_ITEM_CENTER, alpha: 1.0, scale:(2, 2));
+		for (int i = 0; i < 3; ++i)
+		{
+			// The batmobile won't start.
+			// Check the battery.
+			// What's a tery?
+			// *slap*
+			int tery = hdw.WeaponStatus[PSProp_Battery1 + i];
+			if (tery > -1)
+			{
+				sb.DrawImage(GetBatteryIcon(tery), (-16, -15 + 15 * i) + bob, sb.DI_SCREEN_CENTER | sb.DI_ITEM_RIGHT | sb.DI_ITEM_VCENTER, scale: (1.0, 1.0));
+			}
+		}
+	}
+
+	Default
+	{
+		+HDWEAPON.FITSINBACKPACK
+		+INVENTORY.INVBAR
+		+WEAPON.WIMPY_WEAPON
+		-HDWEAPON.DROPTRANSLATION
+		Inventory.Icon "PSGNA0";
+		Inventory.PickupSound "weapons/pocket";
+		Inventory.PickupMessage "You picked up a personal shield generator.";
+		Tag "Personal Shield Generator";
+		HDWeapon.RefId "psg";
+		Scale 0.35;
+	}
+
+	States
+	{
+		Spawn:
+			PSGN AAAABCDEFG 2;
+			Loop;
+		Select:
+			TNT1 A 0 A_AddOffset(100);
+			Goto Super::Select;
+		Ready:
+			TNT1 A 1
+			{
+				if (PressingUser3())
+				{
+					A_MagManager("HDBattery");
+					return;
+				}
+
+				int off = invoker.WeaponStatus[PSProp_UseOffset];
+				if (off > 0)
+				{
+					invoker.WeaponStatus[PSProp_UseOffset] = off * 2 / 3;
+				}
+
+				A_WeaponReady(WRF_ALL | WRF_NOFIRE);
+			}
+			Goto ReadyEnd;
+		Unload:
+			TNT1 A 20;
+			TNT1 A 5
+			{
+				int count = invoker.GetBatteriesLoaded(false);
+				if (count == 0)
+				{
+					return;
+				}
+				int last = invoker.WeaponStatus[PSProp_Battery1 + count - 1];
+				if (PressingUnload() || PressingReload())
+				{
+					HDBattery.GiveMag(self, "HDBattery", last);
+					A_StartSound("weapons/pocket", 9);
+					A_SetTics(20);
+				}
+				else
+				{
+					HDBattery.SpawnMag(self, "HDBattery", last);
+				}
+				invoker.WeaponStatus[PSProp_Battery1 + count - 1] = -1;
+			}
+			Goto ReloadEnd;
+		Reload:
+			TNT1 A 14 A_StartSound("weapons/pocket", 9);
+			TNT1 A 5
+			{
+				let bat = HDBattery(FindInventory('HDBattery'));
+				int count = invoker.GetBatteriesLoaded(false);
+				if (!bat || count == 3)
+				{
+					return;
+
+				}
+
+				invoker.WeaponStatus[PSProp_Battery1 + count] = bat.TakeMag(true);
+				A_StartSound("weapons/vulcopen1", 8, CHANF_OVERLAP);
+			}
+			Goto ReloadEnd;
+		ReloadEnd:
+			TNT1 A 6;
+			Goto Ready;
+	}
+}
+
+class HDPersonalShield : HDMagicShield
+{
+	override void DoEffect()
+	{
+		if (owner.bCORPSE || owner.Health <= 0)
+		{
+			return;
+		}
+
+		if (!ShieldGenerator)
+		{
+			ShieldGenerator = HDPersonalShieldGenerator(owner.FindInventory('HDPersonalShieldGenerator'));
+			if (!ShieldGenerator)
+			{
+				Destroy();
+				return;
+			}
+		}
+
+		int batteries = ShieldGenerator.GetBatteriesLoaded(true);
+		MaxAmount = default.MaxAmount * batteries;
+
+		if (MaxAmount == 0)
+		{
+			Amount = 0;
+			return;
+		}
+
+		if (Amount > 0 && GetAge() % 2 == 0)
+		{
+			double fac = sin(Amount / (MaxAmount / 2.0) * 90.0) * 1.04;
+			int maxRegen = (MaxAmount / default.MaxAmount) + 2;
+			int regenAmount = int(max(1, min(maxRegen, floor(maxRegen * fac))));
+			Amount = min(Amount, MaxAmount);
+			int toRegen = min(MaxAmount - Amount, regenAmount);
+			Amount += toRegen;
+			ShieldGenerator.WeaponStatus[ShieldGenerator.PSProp_ShieldRegenerated] += toRegen;
+			//Console.Printf("%i, %i, %i, %i, %f", Amount, MaxAmount, regenAmount, toRegen, fac);
+		}
+		else if (Amount <= 0)
+		{
+			Depleted = true;
+			Amount++;
+		}
+
+		if (Depleted && Amount > 0)
+		{
+			Depleted = false;
+			if (hd_debug)
+			{
+				Console.Printf(owner.GetClassName().." shield restored!");
+			}
+			owner.A_StartSound("misc/mobshieldf", CHAN_BODY, CHANF_OVERLAP, 0.75);
+			double oradius = owner.radius;
+			double oheight = owner.height;
+			for (int i = 0; i < 10; ++i)
+			{
+				vector3 rpos = owner.pos + (frandom(-oradius, oradius), frandom(-oradius, oradius), frandom(0, oheight));
+				actor spk = actor.Spawn("ShieldSpark", rpos, ALLOW_REPLACE);
+				vector3 sv = spk.Vec3To(owner);
+				sv.z += height / 2;
+				spk.vel = sv * 0.02;
+			}
+		}
+	}
+
+	bool Depleted;
+	HDPersonalShieldGenerator ShieldGenerator;
+
+	Default
+	{
+		+INVENTORY.KEEPDEPLETED
+		Inventory.MaxAmount 1000;
+		HDDamageHandler.Priority 10001; // [Ace] Handle it before the shield from Arcanum (which is just the regular shield).
+	}
+}
