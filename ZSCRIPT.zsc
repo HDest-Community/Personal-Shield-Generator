@@ -39,7 +39,8 @@ class HDPersonalShieldGenerator : HDWeapon
 		PSProp_Battery1,
 		PSProp_Battery2,
 		PSProp_Battery3,
-		PSProp_ShieldRegenerated
+		PSProp_ShieldRegenerated,
+		PSProp_Efficiency
 	}
 
 	action void A_AddOffset(int ofs)
@@ -62,6 +63,7 @@ class HDPersonalShieldGenerator : HDWeapon
 		WeaponStatus[PSProp_Battery1] = 20;
 		WeaponStatus[PSProp_Battery2] = -1;
 		WeaponStatus[PSProp_Battery3] = -1;
+		WeaponStatus[PSProp_Efficiency] = BaseEfficiency;
 	}
 
 	override int GetSbarNum(int flags)
@@ -98,9 +100,14 @@ class HDPersonalShieldGenerator : HDWeapon
 
 	override void DoEffect()
 	{
-		if (WeaponStatus[PSProp_ShieldRegenerated] >= 500)
+		int adjustedEfficiency = WeaponStatus[PSProp_Efficiency] * GetBatteriesLoaded(1);
+		if (WeaponStatus[PSProp_ShieldRegenerated] >= adjustedEfficiency)
 		{
-			WeaponStatus[PSProp_ShieldRegenerated] -= 500;
+			WeaponStatus[PSProp_ShieldRegenerated] -= adjustedEfficiency;
+			if (WeaponStatus[PSProp_Efficiency] > 0)
+			{
+				WeaponStatus[PSProp_Efficiency] -= 10;
+			}
 			for (int i = PSProp_Battery1; i <= PSProp_Battery3; ++i)
 			{
 				if (WeaponStatus[i] > 0)
@@ -109,7 +116,6 @@ class HDPersonalShieldGenerator : HDWeapon
 				}
 			}
 		}
-
 		Super.DoEffect();
 	}
 
@@ -152,9 +158,8 @@ class HDPersonalShieldGenerator : HDWeapon
 		vector2 bob = hpl.hudbob * 0.3;
 		int Offset = WeaponStatus[PSProp_UseOffset];
 		bob.y += Offset;
-		int BaseYOffset = 0;
 		
-		sb.DrawImage(GetBatteriesLoaded(1) > 0 ? "PSGND0" : "PSGNA0", (0, BaseYOffset) + bob, sb.DI_SCREEN_CENTER | sb.DI_ITEM_CENTER, alpha: 1.0, scale:(2, 2));
+		sb.DrawImage(GetBatteriesLoaded(1) > 0 ? "PSGND0" : "PSGNA0", (0, 0) + bob, sb.DI_SCREEN_CENTER | sb.DI_ITEM_CENTER, alpha: 1.0, scale:(2, 2));
 		for (int i = 0; i < 3; ++i)
 		{
 			// The batmobile won't start.
@@ -167,7 +172,33 @@ class HDPersonalShieldGenerator : HDWeapon
 				sb.DrawImage(GetBatteryIcon(tery), (-16, -15 + 15 * i) + bob, sb.DI_SCREEN_CENTER | sb.DI_ITEM_RIGHT | sb.DI_ITEM_VCENTER, scale: (1.0, 1.0));
 			}
 		}
+
+		int batteries = GetBatteriesLoaded(1);
+		sb.DrawString(sb.pSmallFont, "\c[White]MAX: \c-"..sb.FormatNumber(BaseCapacity * batteries, 1, 4), (16, -15 - sb.pSmallFont.mFont.GetHeight() / 2) + bob, sb.DI_SCREEN_CENTER | sb.DI_TEXT_ALIGN_LEFT, Font.CR_GREEN);
+
+		int efficiency = hdw.WeaponStatus[PSProp_Efficiency];
+		int efcol = Font.CR_GREEN;
+		if (efficiency < 100)
+		{
+			efcol = Font.CR_BLACK;
+		}
+		else if (efficiency < 150)
+		{
+			efcol = Font.CR_RED;
+		}
+		else if (efficiency < 250)
+		{
+			efcol = Font.CR_ORANGE;
+		}
+		else if (efficiency < 400)
+		{
+			efcol = Font.CR_YELLOW;
+		}
+		sb.DrawString(sb.pSmallFont, "\c[White]EFF: \c-"..sb.FormatNumber(efficiency * GetBatteriesLoaded(1), 1, 4), (16, 0 - sb.pSmallFont.mFont.GetHeight() / 2) + bob, sb.DI_SCREEN_CENTER | sb.DI_TEXT_ALIGN_LEFT, efcol);
 	}
+
+	const BaseCapacity = 1000;
+	const BaseEfficiency = 500;
 
 	Default
 	{
@@ -326,7 +357,7 @@ class HDPersonalShield : HDMagicShield
 	Default
 	{
 		+INVENTORY.KEEPDEPLETED
-		Inventory.MaxAmount 1000;
+		Inventory.MaxAmount HDPersonalShieldGenerator.BaseCapacity;
 		HDDamageHandler.Priority 10001; // [Ace] Handle it before the shield from Arcanum (which is just the regular shield).
 	}
 }
