@@ -1,5 +1,0 @@
-Code:
-- Accensus
-
-Sprites:
-- Conveniently taken from Russian Overkill.

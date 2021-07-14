@@ -1,6 +1,6 @@
 ### Notes
 ---
-- The Personal Shield Generator can only be found in backpacks.
+- The Personal Shield Generator can be found both in the wild and in backpacks.
 - Loadout code is `psg`.
 
 ### Mechanics
