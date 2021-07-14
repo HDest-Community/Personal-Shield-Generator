@@ -313,16 +313,19 @@ class HDPersonalShield : HDMagicShield
 			return;
 		}
 
-		if (Amount > 0 && GetAge() % 2 == 0)
+		if (Amount > 0 && Amount < MaxAmount)
 		{
-			double fac = sin(Amount / (MaxAmount / 2.0) * 90.0) * 1.04;
-			int maxRegen = (MaxAmount / default.MaxAmount) + 2;
-			int regenAmount = int(max(1, min(maxRegen, floor(maxRegen * fac))));
-			Amount = min(Amount, MaxAmount);
-			int toRegen = min(MaxAmount - Amount, regenAmount);
-			Amount += toRegen;
-			ShieldGenerator.WeaponStatus[ShieldGenerator.PSProp_ShieldRegenerated] += toRegen;
-			//Console.Printf("%i, %i, %i, %i, %f", Amount, MaxAmount, regenAmount, toRegen, fac);
+			// https://www.desmos.com/calculator/00tiznk9dk
+			double fac = 1.0 - (sin(Amount / (MaxAmount / 2.0) * 90.0) / (RechargeTics / (RechargeTics - 1.0))) * (1.0 + 0.25 * ((batteries - 1) / (RechargeTics - 1.0)));
+			// Console.Printf("\c[Green]amt:\c- %i \c[Green]max:\c- %i \c[Green]rf:\c- %.3f \c[Green]rtf:\c- %.3f \c[Green]fac:\c- %.3f", Amount, MaxAmount, RechargeFrac, rechargeTics * fac, fac);
+			RechargeFrac++;
+			double adj = RechargeTics * fac;
+			while (RechargeFrac >= adj && Amount < MaxAmount)
+			{
+				RechargeFrac -= adj;
+				Amount++;
+				ShieldGenerator.WeaponStatus[ShieldGenerator.PSProp_ShieldRegenerated]++;
+			}
 		}
 		else if (Amount <= 0)
 		{
@@ -351,7 +354,9 @@ class HDPersonalShield : HDMagicShield
 		}
 	}
 
+	const RechargeTics = 5;
 	bool Depleted;
+	double RechargeFrac;
 	HDPersonalShieldGenerator ShieldGenerator;
 
 	Default
