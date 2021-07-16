@@ -100,8 +100,9 @@ class HDPersonalShieldGenerator : HDWeapon
 
 	override void DoEffect()
 	{
-		int adjustedEfficiency = WeaponStatus[PSProp_Efficiency] * GetBatteriesLoaded(1);
-		if (WeaponStatus[PSProp_ShieldRegenerated] >= adjustedEfficiency)
+		int batteries = GetBatteriesLoaded(1);
+		int adjustedEfficiency = WeaponStatus[PSProp_Efficiency] * batteries;
+		if (batteries > 0 && WeaponStatus[PSProp_ShieldRegenerated] >= adjustedEfficiency)
 		{
 			WeaponStatus[PSProp_ShieldRegenerated] -= adjustedEfficiency;
 			if (WeaponStatus[PSProp_Efficiency] > 0)
