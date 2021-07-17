@@ -106,13 +106,13 @@ class HDPersonalShieldGenerator : HDWeapon
 		{
 			return;
 		}
-		int efficiency = GetAdjustedEfficiency(Efficiencies[batteries - 1], WeaponStatus[PSProp_Degradation]);
+		int efficiency = GetAdjustedEfficiency(BaseEfficiency, WeaponStatus[PSProp_Degradation]);
 		if (WeaponStatus[PSProp_ShieldRegenerated] >= efficiency)
 		{
 			WeaponStatus[PSProp_ShieldRegenerated] -= efficiency;
 			if (efficiency > 0)
 			{
-				WeaponStatus[PSProp_Degradation]++;
+				WeaponStatus[PSProp_Degradation] += batteries;
 			}
 			for (int i = PSProp_Battery1; i <= PSProp_Battery3; ++i)
 			{
@@ -160,7 +160,7 @@ class HDPersonalShieldGenerator : HDWeapon
 
 	private int GetAdjustedEfficiency(int base, int degradation) const
 	{
-		return max(0, base - 5 * degradation);
+		return max(0, base - 10 * degradation);
 	}
 
 	override void DrawHUDStuff(HDStatusBar sb, HDWeapon hdw, HDPlayerPawn hpl)
@@ -187,22 +187,21 @@ class HDPersonalShieldGenerator : HDWeapon
 		int cap = batteries > 0 ? MaxCapacities[batteries - 1] : 0;
 		sb.DrawString(sb.pSmallFont, "\c[White]MAX: \c-"..sb.FormatNumber(cap, 1, 4), (16, -15 - sb.pSmallFont.mFont.GetHeight() / 2) + bob, sb.DI_SCREEN_CENTER | sb.DI_TEXT_ALIGN_LEFT, Font.CR_GREEN);
 
-		int baseEfficiency = batteries > 0 ? Efficiencies[batteries - 1] : 0;
-		int adjEfficiency = GetAdjustedEfficiency(baseEfficiency, WeaponStatus[PSProp_Degradation]);
+		int adjEfficiency = GetAdjustedEfficiency(BaseEfficiency, WeaponStatus[PSProp_Degradation]);
 		int efcol = Font.CR_GREEN;
-		if (adjEfficiency < baseEfficiency * 0.10)
+		if (adjEfficiency < BaseEfficiency * 0.10)
 		{
 			efcol = Font.CR_BLACK;
 		}
-		else if (adjEfficiency < baseEfficiency * 0.25)
+		else if (adjEfficiency < BaseEfficiency * 0.25)
 		{
 			efcol = Font.CR_RED;
 		}
-		else if (adjEfficiency < baseEfficiency * 0.50)
+		else if (adjEfficiency < BaseEfficiency * 0.50)
 		{
 			efcol = Font.CR_ORANGE;
 		}
-		else if (adjEfficiency < baseEfficiency * 0.75)
+		else if (adjEfficiency < BaseEfficiency * 0.75)
 		{
 			efcol = Font.CR_YELLOW;
 		}
@@ -210,7 +209,7 @@ class HDPersonalShieldGenerator : HDWeapon
 	}
 
 	static const int MaxCapacities[] = { 500, 1500, 3000 };
-	static const int Efficiencies[] = { 1000, 750, 500 };
+	const BaseEfficiency = 1000;
 
 	Default
 	{
