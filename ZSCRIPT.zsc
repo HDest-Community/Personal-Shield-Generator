@@ -63,7 +63,7 @@ class HDPersonalShieldGenerator : HDWeapon
 		WeaponStatus[PSProp_Battery1] = 20;
 		WeaponStatus[PSProp_Battery2] = -1;
 		WeaponStatus[PSProp_Battery3] = -1;
-		WeaponStatus[PSProp_Efficiency] = BaseEfficiency;
+		WeaponStatus[PSProp_Efficiency] = MaxCapacities[0];
 	}
 
 	override int GetSbarNum(int flags)
@@ -107,7 +107,7 @@ class HDPersonalShieldGenerator : HDWeapon
 			WeaponStatus[PSProp_ShieldRegenerated] -= adjustedEfficiency;
 			if (WeaponStatus[PSProp_Efficiency] > 0)
 			{
-				WeaponStatus[PSProp_Efficiency] -= 10;
+				WeaponStatus[PSProp_Efficiency] -= 5;
 			}
 			for (int i = PSProp_Battery1; i <= PSProp_Battery3; ++i)
 			{
@@ -175,31 +175,32 @@ class HDPersonalShieldGenerator : HDWeapon
 		}
 
 		int batteries = GetBatteriesLoaded(1);
-		sb.DrawString(sb.pSmallFont, "\c[White]MAX: \c-"..sb.FormatNumber(BaseCapacity * batteries, 1, 4), (16, -15 - sb.pSmallFont.mFont.GetHeight() / 2) + bob, sb.DI_SCREEN_CENTER | sb.DI_TEXT_ALIGN_LEFT, Font.CR_GREEN);
+		int cap = batteries > 0 ? MaxCapacities[batteries - 1] : 0;
+		sb.DrawString(sb.pSmallFont, "\c[White]MAX: \c-"..sb.FormatNumber(cap, 1, 4), (16, -15 - sb.pSmallFont.mFont.GetHeight() / 2) + bob, sb.DI_SCREEN_CENTER | sb.DI_TEXT_ALIGN_LEFT, Font.CR_GREEN);
 
 		int efficiency = hdw.WeaponStatus[PSProp_Efficiency];
+		int baseEfficiency = MaxCapacities[0];
 		int efcol = Font.CR_GREEN;
-		if (efficiency < 100)
+		if (efficiency < baseEfficiency * 0.10)
 		{
 			efcol = Font.CR_BLACK;
 		}
-		else if (efficiency < 150)
+		else if (efficiency < baseEfficiency * 0.25)
 		{
 			efcol = Font.CR_RED;
 		}
-		else if (efficiency < 250)
+		else if (efficiency < baseEfficiency * 0.50)
 		{
 			efcol = Font.CR_ORANGE;
 		}
-		else if (efficiency < 400)
+		else if (efficiency < baseEfficiency * 0.75)
 		{
 			efcol = Font.CR_YELLOW;
 		}
 		sb.DrawString(sb.pSmallFont, "\c[White]EFF: \c-"..sb.FormatNumber(efficiency * GetBatteriesLoaded(1), 1, 4), (16, 0 - sb.pSmallFont.mFont.GetHeight() / 2) + bob, sb.DI_SCREEN_CENTER | sb.DI_TEXT_ALIGN_LEFT, efcol);
 	}
 
-	const BaseCapacity = 1000;
-	const BaseEfficiency = 500;
+	static const int MaxCapacities[] = { 250, 750, 1500 };
 
 	Default
 	{
@@ -306,7 +307,7 @@ class HDPersonalShield : HDMagicShield
 		}
 
 		int batteries = ShieldGenerator.GetBatteriesLoaded(1);
-		MaxAmount = default.MaxAmount * batteries;
+		MaxAmount = batteries > 0 ? HDPersonalShieldGenerator.MaxCapacities[batteries - 1] : 0;
 
 		if (MaxAmount == 0)
 		{
@@ -363,7 +364,6 @@ class HDPersonalShield : HDMagicShield
 	Default
 	{
 		+INVENTORY.KEEPDEPLETED
-		Inventory.MaxAmount HDPersonalShieldGenerator.BaseCapacity;
 		HDDamageHandler.Priority 10001; // [Ace] Handle it before the shield from Arcanum (which is just the regular shield).
 	}
 }
