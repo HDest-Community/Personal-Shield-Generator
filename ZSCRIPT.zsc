@@ -40,7 +40,7 @@ class HDPersonalShieldGenerator : HDWeapon
 		PSProp_Battery2,
 		PSProp_Battery3,
 		PSProp_ShieldRegenerated,
-		PSProp_Efficiency
+		PSProp_Degradation
 	}
 
 	action void A_AddOffset(int ofs)
@@ -63,7 +63,7 @@ class HDPersonalShieldGenerator : HDWeapon
 		WeaponStatus[PSProp_Battery1] = 20;
 		WeaponStatus[PSProp_Battery2] = -1;
 		WeaponStatus[PSProp_Battery3] = -1;
-		WeaponStatus[PSProp_Efficiency] = MaxCapacities[0];
+		WeaponStatus[PSProp_Degradation] = 0;
 	}
 
 	override int GetSbarNum(int flags)
@@ -100,14 +100,19 @@ class HDPersonalShieldGenerator : HDWeapon
 
 	override void DoEffect()
 	{
+		Super.DoEffect();
 		int batteries = GetBatteriesLoaded(1);
-		int adjustedEfficiency = WeaponStatus[PSProp_Efficiency] * batteries;
-		if (batteries > 0 && WeaponStatus[PSProp_ShieldRegenerated] >= adjustedEfficiency)
+		if (batteries == 0)
 		{
-			WeaponStatus[PSProp_ShieldRegenerated] -= adjustedEfficiency;
-			if (WeaponStatus[PSProp_Efficiency] > 0)
+			return;
+		}
+		int efficiency = GetAdjustedEfficiency(Efficiencies[batteries - 1], WeaponStatus[PSProp_Degradation]);
+		if (WeaponStatus[PSProp_ShieldRegenerated] >= efficiency)
+		{
+			WeaponStatus[PSProp_ShieldRegenerated] -= efficiency;
+			if (efficiency > 0)
 			{
-				WeaponStatus[PSProp_Efficiency] -= 5;
+				WeaponStatus[PSProp_Degradation]++;
 			}
 			for (int i = PSProp_Battery1; i <= PSProp_Battery3; ++i)
 			{
@@ -117,7 +122,6 @@ class HDPersonalShieldGenerator : HDWeapon
 				}
 			}
 		}
-		Super.DoEffect();
 	}
 
 	// [Ace] This should be clearscope, but for some reason LZDoom shits the bed so I can't test it.
@@ -154,6 +158,11 @@ class HDPersonalShieldGenerator : HDWeapon
 		}
 	}
 
+	private int GetAdjustedEfficiency(int base, int degradation) const
+	{
+		return max(0, base - 5 * degradation);
+	}
+
 	override void DrawHUDStuff(HDStatusBar sb, HDWeapon hdw, HDPlayerPawn hpl)
 	{
 		vector2 bob = hpl.hudbob * 0.3;
@@ -178,29 +187,30 @@ class HDPersonalShieldGenerator : HDWeapon
 		int cap = batteries > 0 ? MaxCapacities[batteries - 1] : 0;
 		sb.DrawString(sb.pSmallFont, "\c[White]MAX: \c-"..sb.FormatNumber(cap, 1, 4), (16, -15 - sb.pSmallFont.mFont.GetHeight() / 2) + bob, sb.DI_SCREEN_CENTER | sb.DI_TEXT_ALIGN_LEFT, Font.CR_GREEN);
 
-		int efficiency = hdw.WeaponStatus[PSProp_Efficiency];
-		int baseEfficiency = MaxCapacities[0];
+		int baseEfficiency = batteries > 0 ? Efficiencies[batteries - 1] : 0;
+		int adjEfficiency = GetAdjustedEfficiency(baseEfficiency, WeaponStatus[PSProp_Degradation]);
 		int efcol = Font.CR_GREEN;
-		if (efficiency < baseEfficiency * 0.10)
+		if (adjEfficiency < baseEfficiency * 0.10)
 		{
 			efcol = Font.CR_BLACK;
 		}
-		else if (efficiency < baseEfficiency * 0.25)
+		else if (adjEfficiency < baseEfficiency * 0.25)
 		{
 			efcol = Font.CR_RED;
 		}
-		else if (efficiency < baseEfficiency * 0.50)
+		else if (adjEfficiency < baseEfficiency * 0.50)
 		{
 			efcol = Font.CR_ORANGE;
 		}
-		else if (efficiency < baseEfficiency * 0.75)
+		else if (adjEfficiency < baseEfficiency * 0.75)
 		{
 			efcol = Font.CR_YELLOW;
 		}
-		sb.DrawString(sb.pSmallFont, "\c[White]EFF: \c-"..sb.FormatNumber(efficiency * GetBatteriesLoaded(1), 1, 4), (16, 0 - sb.pSmallFont.mFont.GetHeight() / 2) + bob, sb.DI_SCREEN_CENTER | sb.DI_TEXT_ALIGN_LEFT, efcol);
+		sb.DrawString(sb.pSmallFont, "\c[White]EFF: \c-"..sb.FormatNumber(adjEfficiency, 1, 4), (16, 0 - sb.pSmallFont.mFont.GetHeight() / 2) + bob, sb.DI_SCREEN_CENTER | sb.DI_TEXT_ALIGN_LEFT, efcol);
 	}
 
 	static const int MaxCapacities[] = { 250, 750, 1500 };
+	static const int Efficiencies[] = { 1000, 750, 500 };
 
 	Default
 	{
@@ -315,10 +325,15 @@ class HDPersonalShield : HDMagicShield
 			return;
 		}
 
+		if (Amount > MaxAmount)
+		{
+			Amount = MaxAmount;
+		}
+
 		if (Amount > 0 && Amount < MaxAmount)
 		{
 			// https://www.desmos.com/calculator/00tiznk9dk
-			double fac = 1.0 - (sin(Amount / (MaxAmount / 2.0) * 90.0) / (RechargeTics / (RechargeTics - 1.0))) * (1.0 + 0.25 * ((batteries - 1) / (RechargeTics - 1.0)));
+			double fac = 1.0 - (sin(Amount / (MaxAmount / 2.0) * 90.0) / (RechargeTics / (RechargeTics - 1.0)));
 			// Console.Printf("\c[Green]amt:\c- %i \c[Green]max:\c- %i \c[Green]rf:\c- %.3f \c[Green]rtf:\c- %.3f \c[Green]fac:\c- %.3f", Amount, MaxAmount, RechargeFrac, rechargeTics * fac, fac);
 			RechargeFrac++;
 			double adj = RechargeTics * fac;
