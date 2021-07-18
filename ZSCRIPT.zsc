@@ -190,19 +190,19 @@ class HDPersonalShieldGenerator : HDWeapon
 
 		int adjEfficiency = GetAdjustedEfficiency(BaseEfficiency, WeaponStatus[PSProp_Degradation]);
 		int efcol = Font.CR_GREEN;
-		if (adjEfficiency < BaseEfficiency * 0.10)
+		if (adjEfficiency < BaseEfficiency * 0.20)
 		{
 			efcol = Font.CR_BLACK;
 		}
-		else if (adjEfficiency < BaseEfficiency * 0.25)
+		else if (adjEfficiency < BaseEfficiency * 0.40)
 		{
 			efcol = Font.CR_RED;
 		}
-		else if (adjEfficiency < BaseEfficiency * 0.50)
+		else if (adjEfficiency < BaseEfficiency * 0.60)
 		{
 			efcol = Font.CR_ORANGE;
 		}
-		else if (adjEfficiency < BaseEfficiency * 0.75)
+		else if (adjEfficiency < BaseEfficiency * 0.80)
 		{
 			efcol = Font.CR_YELLOW;
 		}
