@@ -54,7 +54,8 @@ class HDPersonalShieldGenerator : HDWeapon
 	override string GetHelpText()
 	{
 		string BaseString = WEPHELP_RELOAD.."  Reload battery\n"
-		..WEPHELP_UNLOAD.."  Unload battery";
+		..WEPHELP_UNLOAD.."  Unload battery\n"
+		..WEPHELP_FIREMODE.."  Toggle on/off";
 		return BaseString;
 	}
 	override double WeaponBulk() { return 40 + GetBatteriesLoaded() * ENC_BATTERY_LOADED; }
@@ -206,10 +207,13 @@ class HDPersonalShieldGenerator : HDWeapon
 			efcol = Font.CR_YELLOW;
 		}
 		sb.DrawString(sb.pSmallFont, "\c[White]EFF: \c-"..sb.FormatNumber(adjEfficiency, 1, 4), (16, 0 - sb.pSmallFont.mFont.GetHeight() / 2) + bob, sb.DI_SCREEN_CENTER | sb.DI_TEXT_ALIGN_LEFT, efcol);
+
+		sb.DrawString(sb.pSmallFont, Enabled ? "\c[Green]Enabled\c-" : "\c[Red]Disabled\c-", (16, 15 - sb.pSmallFont.mFont.GetHeight() / 2) + bob, sb.DI_SCREEN_CENTER | sb.DI_TEXT_ALIGN_LEFT, efcol);
 	}
 
 	static const int MaxCapacities[] = { 500, 1500, 3000 };
 	const BaseEfficiency = 1000;
+	bool Enabled;
 
 	Default
 	{
@@ -290,6 +294,12 @@ class HDPersonalShieldGenerator : HDWeapon
 				A_StartSound("weapons/vulcopen1", 8, CHANF_OVERLAP);
 			}
 			Goto ReloadEnd;
+		Firemode:
+			TNT1 A 5
+			{
+				invoker.Enabled = !invoker.Enabled;
+			}
+			Goto Nope;
 		ReloadEnd:
 			TNT1 A 6;
 			Goto Ready;
@@ -327,6 +337,15 @@ class HDPersonalShield : HDMagicShield
 		if (Amount > MaxAmount)
 		{
 			Amount = MaxAmount;
+		}
+
+		if (!ShieldGenerator.Enabled)
+		{
+			if (Amount < 0)
+			{
+				Amount++;
+			}
+			return;
 		}
 
 		if (Amount > 0 && Amount < MaxAmount)
