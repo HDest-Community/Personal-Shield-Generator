@@ -398,14 +398,10 @@ class HDPersonalShield : HDMagicShield
 
 		if (!ShieldGenerator.Enabled)
 		{
-			if (Amount < 0)
-			{
-				Amount++;
-			}
 			return;
 		}
 
-		if (Amount > 0 && Amount < MaxAmount)
+		if (Amount >= 0 && Amount < MaxAmount)
 		{
 			// https://www.desmos.com/calculator/00tiznk9dk
 			int rpts = ShieldGenerator.WeaponStatus[ShieldGenerator.PSProp_RchPoints] + 1;
@@ -421,10 +417,10 @@ class HDPersonalShield : HDMagicShield
 				ShieldGenerator.WeaponStatus[ShieldGenerator.PSProp_ShieldRegenerated]++;
 			}
 		}
-		else if (Amount <= 0)
+		else if (Amount < 0)
 		{
 			Depleted = true;
-			Amount++;
+			Amount = 0;
 		}
 
 		if (Depleted && Amount > 0)
