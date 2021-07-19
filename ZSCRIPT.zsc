@@ -40,7 +40,11 @@ class HDPersonalShieldGenerator : HDWeapon
 		PSProp_Battery2,
 		PSProp_Battery3,
 		PSProp_ShieldRegenerated,
-		PSProp_Degradation
+		PSProp_Degradation,
+		PSProp_AllocationPoints,
+		PSProp_CapPoints,
+		PSProp_EffPoints,
+		PSProp_RchPoints
 	}
 
 	action void A_AddOffset(int ofs)
@@ -55,16 +59,23 @@ class HDPersonalShieldGenerator : HDWeapon
 	{
 		string BaseString = WEPHELP_RELOAD.."  Reload battery\n"
 		..WEPHELP_UNLOAD.."  Unload battery\n"
-		..WEPHELP_FIREMODE.."  Toggle on/off";
+		..WEPHELP_FIRE.." or "..WEPHELP_ALTFIRE.."  Allocate points\n"
+		..WEPHELP_FIREMODE.."+"..WEPHELP_FIRE.." or "..WEPHELP_ALTFIRE.."  Cycle selection\n"
+		..WEPHELP_UNLOAD.."  Unload battery\n"
+		..WEPHELP_ZOOM.."  Toggle on/off";
 		return BaseString;
 	}
 	override double WeaponBulk() { return 40 + GetBatteriesLoaded() * ENC_BATTERY_LOADED; }
 	override void InitializeWepStats(bool idfa)
 	{
 		WeaponStatus[PSProp_Battery1] = 20;
-		WeaponStatus[PSProp_Battery2] = -1;
-		WeaponStatus[PSProp_Battery3] = -1;
+		WeaponStatus[PSProp_Battery2] = 20;
+		WeaponStatus[PSProp_Battery3] = 20;
 		WeaponStatus[PSProp_Degradation] = 0;
+		WeaponStatus[PSProp_AllocationPoints] = 3;
+		WeaponStatus[PSProp_CapPoints] = 0;
+		WeaponStatus[PSProp_EffPoints] = 0;
+		WeaponStatus[PSProp_RchPoints] = 0;
 	}
 
 	override int GetSbarNum(int flags)
@@ -84,6 +95,7 @@ class HDPersonalShieldGenerator : HDWeapon
 		let shield = HDPersonalShield(other.GiveInventoryType('HDPersonalShield'));
 		if (shield)
 		{
+			shield.Amount = 0;
 			shield.Depleted = true;
 		}
 		Super.AttachToOwner(other);
@@ -107,13 +119,13 @@ class HDPersonalShieldGenerator : HDWeapon
 		{
 			return;
 		}
-		int efficiency = GetAdjustedEfficiency(BaseEfficiency, WeaponStatus[PSProp_Degradation]);
+		int efficiency = GetAdjustedEfficiency(Efficiencies[WeaponStatus[PSProp_EffPoints]], WeaponStatus[PSProp_Degradation]);
 		if (WeaponStatus[PSProp_ShieldRegenerated] >= efficiency)
 		{
 			WeaponStatus[PSProp_ShieldRegenerated] -= efficiency;
 			if (efficiency > 0)
 			{
-				WeaponStatus[PSProp_Degradation] += batteries;
+				WeaponStatus[PSProp_Degradation]++;
 			}
 			for (int i = PSProp_Battery1; i <= PSProp_Battery3; ++i)
 			{
@@ -185,35 +197,53 @@ class HDPersonalShieldGenerator : HDWeapon
 		}
 
 		int batteries = GetBatteriesLoaded(1);
-		int cap = batteries > 0 ? MaxCapacities[batteries - 1] : 0;
-		sb.DrawString(sb.pSmallFont, "\c[White]MAX: \c-"..sb.FormatNumber(cap, 1, 4), (16, -15 - sb.pSmallFont.mFont.GetHeight() / 2) + bob, sb.DI_SCREEN_CENTER | sb.DI_TEXT_ALIGN_LEFT, Font.CR_GREEN);
 
-		int adjEfficiency = GetAdjustedEfficiency(BaseEfficiency, WeaponStatus[PSProp_Degradation]);
+		// Capacity.
+		int pts = hdw.WeaponStatus[PSProp_CapPoints];
+		string selCol = Selection == 0 ? "\c[Gold]" : "\c[White]";
+
+		string str = selCol.."CAP "..Sliders[pts]..": \c-"..sb.FormatNumber(Capacities[pts], 1, 5);
+		sb.DrawString(sb.pSmallFont, str, (16, -15 - sb.pSmallFont.mFont.GetHeight() / 2) + bob, sb.DI_SCREEN_CENTER | sb.DI_TEXT_ALIGN_LEFT, Font.CR_GREEN);
+
+		// Efficiency.
+		pts = hdw.WeaponStatus[PSProp_EffPoints];
+		int adjEfficiency = GetAdjustedEfficiency(Efficiencies[pts], WeaponStatus[PSProp_Degradation]);
 		int efcol = Font.CR_GREEN;
-		if (adjEfficiency < BaseEfficiency * 0.20)
+		if (adjEfficiency < Efficiencies[pts] * 0.20)
 		{
 			efcol = Font.CR_BLACK;
 		}
-		else if (adjEfficiency < BaseEfficiency * 0.40)
+		else if (adjEfficiency < Efficiencies[pts] * 0.40)
 		{
 			efcol = Font.CR_RED;
 		}
-		else if (adjEfficiency < BaseEfficiency * 0.60)
+		else if (adjEfficiency < Efficiencies[pts] * 0.60)
 		{
 			efcol = Font.CR_ORANGE;
 		}
-		else if (adjEfficiency < BaseEfficiency * 0.80)
+		else if (adjEfficiency < Efficiencies[pts] * 0.80)
 		{
 			efcol = Font.CR_YELLOW;
 		}
-		sb.DrawString(sb.pSmallFont, "\c[White]EFF: \c-"..sb.FormatNumber(adjEfficiency, 1, 4), (16, 0 - sb.pSmallFont.mFont.GetHeight() / 2) + bob, sb.DI_SCREEN_CENTER | sb.DI_TEXT_ALIGN_LEFT, efcol);
+		selCol = Selection == 1 ? "\c[Gold]" : "\c[White]";
+		str = selCol.."EFF "..Sliders[pts]..": \c-"..sb.FormatNumber(adjEfficiency, 1, 4).."\c[White]/\c-"..sb.FormatNumber(Efficiencies[pts], 1, 4);
+		sb.DrawString(sb.pSmallFont, str, (16, -5 - sb.pSmallFont.mFont.GetHeight() / 2) + bob, sb.DI_SCREEN_CENTER | sb.DI_TEXT_ALIGN_LEFT, efcol);
+
+		// Recharge rate.
+		pts = hdw.WeaponStatus[PSProp_RchPoints];
+		selCol = Selection == 2 ? "\c[Gold]" : "\c[White]";
+		str = selCol.."RCH "..Sliders[pts]..": \c-"..String.Format("%.1f", HDPersonalShield.RechargeTics - pts * 1.5);
+		sb.DrawString(sb.pSmallFont, str, (16, 5 - sb.pSmallFont.mFont.GetHeight() / 2) + bob, sb.DI_SCREEN_CENTER | sb.DI_TEXT_ALIGN_LEFT, Font.CR_GREEN);
 
 		sb.DrawString(sb.pSmallFont, Enabled ? "\c[Green]Enabled\c-" : "\c[Red]Disabled\c-", (16, 15 - sb.pSmallFont.mFont.GetHeight() / 2) + bob, sb.DI_SCREEN_CENTER | sb.DI_TEXT_ALIGN_LEFT, efcol);
 	}
 
-	static const int MaxCapacities[] = { 500, 1500, 3000 };
-	const BaseEfficiency = 1000;
+	static const string Sliders[] = { "([]----------)", "(-----[]-----)", "(----------[])" };
+	static const int Capacities[] = { 2500, 5000, 10000 };
+	static const int Efficiencies[] = { 1000, 2000, 3000 };
 	bool Enabled;
+	private int Selection;
+	private transient CVar InvertSelection;
 
 	Default
 	{
@@ -246,13 +276,41 @@ class HDPersonalShieldGenerator : HDWeapon
 					return;
 				}
 
+				if (PressingFiremode())
+				{
+					if (!invoker.InvertSelection)
+					{
+						invoker.InvertSelection = CVar.GetCVar('psg_invert', player);
+					}
+					int v = invoker.InvertSelection.GetBool() ? -1 : 1; 
+					invoker.Selection += (JustPressed(BT_ATTACK) ? v : (JustPressed(BT_ALTATTACK) ? -v : 0));
+					if (invoker.Selection < 0)
+					{
+						invoker.Selection = 2;
+					}
+					invoker.Selection %= 3;
+				}
+				else
+				{
+					if (JustPressed(BT_ATTACK) && invoker.WeaponStatus[PSProp_CapPoints + invoker.Selection] > 0)
+					{
+						invoker.WeaponStatus[PSProp_CapPoints + invoker.Selection]--;
+						invoker.WeaponStatus[PSProp_AllocationPoints]++;
+					}
+					else if (JustPressed(BT_ALTATTACK) && invoker.WeaponStatus[PSProp_CapPoints + invoker.Selection] < invoker.Sliders.Size() - 1 && invoker.WeaponStatus[PSProp_AllocationPoints] > 0)
+					{
+						invoker.WeaponStatus[PSProp_CapPoints + invoker.Selection]++;
+						invoker.WeaponStatus[PSProp_AllocationPoints]--;
+					}
+				}
+
 				int off = invoker.WeaponStatus[PSProp_UseOffset];
 				if (off > 0)
 				{
 					invoker.WeaponStatus[PSProp_UseOffset] = off * 2 / 3;
 				}
 
-				A_WeaponReady(WRF_ALL | WRF_NOFIRE);
+				A_WeaponReady((WRF_ALL | WRF_NOFIRE) & ~WRF_ALLOWUSER2);
 			}
 			Goto ReadyEnd;
 		Unload:
@@ -294,7 +352,7 @@ class HDPersonalShieldGenerator : HDWeapon
 				A_StartSound("weapons/vulcopen1", 8, CHANF_OVERLAP);
 			}
 			Goto ReloadEnd;
-		Firemode:
+		Zoom:
 			TNT1 A 5
 			{
 				invoker.Enabled = !invoker.Enabled;
@@ -326,17 +384,16 @@ class HDPersonalShield : HDMagicShield
 		}
 
 		int batteries = ShieldGenerator.GetBatteriesLoaded(1);
-		MaxAmount = batteries > 0 ? HDPersonalShieldGenerator.MaxCapacities[batteries - 1] : 0;
-
-		if (MaxAmount == 0)
+		MaxAmount = HDPersonalShieldGenerator.Capacities[ShieldGenerator.WeaponStatus[ShieldGenerator.PSProp_CapPoints]];
+		if (batteries < 3)
 		{
+			ShieldGenerator.Enabled = false;
+		}
+		if (batteries == 0)
+		{
+			MaxAmount = 0;
 			Amount = 0;
 			return;
-		}
-
-		if (Amount > MaxAmount)
-		{
-			Amount = MaxAmount;
 		}
 
 		if (!ShieldGenerator.Enabled)
@@ -351,14 +408,16 @@ class HDPersonalShield : HDMagicShield
 		if (Amount > 0 && Amount < MaxAmount)
 		{
 			// https://www.desmos.com/calculator/00tiznk9dk
-			double fac = 1.0 - (sin(Amount / (MaxAmount / 2.0) * 90.0) / (RechargeTics / (RechargeTics - 1.0)));
+			int rpts = ShieldGenerator.WeaponStatus[ShieldGenerator.PSProp_RchPoints] + 1;
+			double rtics = RechargeTics - (rpts - 1) * 1.5;
+			double fac = 1.0 - (sin(Amount / (MaxAmount / 2.0) * 90.0) / (rtics / (rtics - 1.0))) * (1.0 + 0.25 * ((rpts - 1) / (rtics - 1.0)));
 			// Console.Printf("\c[Green]amt:\c- %i \c[Green]max:\c- %i \c[Green]rf:\c- %.3f \c[Green]rtf:\c- %.3f \c[Green]fac:\c- %.3f", Amount, MaxAmount, RechargeFrac, rechargeTics * fac, fac);
 			RechargeFrac++;
-			double adj = RechargeTics * fac;
+			double adj = rtics * fac;
 			while (RechargeFrac >= adj && Amount < MaxAmount)
 			{
 				RechargeFrac -= adj;
-				Amount++;
+				Amount = min(Amount + 1, MaxAmount);
 				ShieldGenerator.WeaponStatus[ShieldGenerator.PSProp_ShieldRegenerated]++;
 			}
 		}
