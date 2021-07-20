@@ -14,7 +14,7 @@ class PsgHandler : EventHandler
 			case 'BattleArmour':
 				if (random[psgrand]() <= 48)
 				{
-					e.Replacement = 'HDPersonalShieldGenerator';
+					e.Replacement = 'PsgRandom';
 				}
 				break;
 		}
@@ -88,11 +88,6 @@ class HDPersonalShieldGenerator : HDWeapon
 		WeaponStatus[PSProp_Battery1] = 20;
 		WeaponStatus[PSProp_Battery2] = 20;
 		WeaponStatus[PSProp_Battery3] = 20;
-		WeaponStatus[PSProp_Degradation] = 0;
-		WeaponStatus[PSProp_AllocationPoints] = 2;
-		WeaponStatus[PSProp_CapPoints] = 0;
-		WeaponStatus[PSProp_EffPoints] = 0;
-		WeaponStatus[PSProp_RchPoints] = 0;
 	}
 
 	override int GetSbarNum(int flags)
@@ -131,7 +126,7 @@ class HDPersonalShieldGenerator : HDWeapon
 	override void DoEffect()
 	{
 		Super.DoEffect();
-		
+
 		Icon = TexMan.CheckForTexture(GetPickupSprite(), TexMan.Type_Any);
 
 		int batteries = GetBatteriesLoaded(1);
@@ -392,6 +387,27 @@ class HDPersonalShieldGenerator : HDWeapon
 		ReloadEnd:
 			TNT1 A 6;
 			Goto Ready;
+	}
+}
+
+class PsgRandom : IdleDummy
+{
+	States
+	{
+		Spawn:
+			TNT1 A 0 nodelay
+			{
+				let psg = HDPersonalShieldGenerator(Spawn("HDPersonalShieldGenerator", pos, ALLOW_REPLACE));
+				if (!psg)
+				{
+					return;
+				}
+
+				HDF.TransferSpecials(self, psg);
+				psg.WeaponStatus[psg.PSProp_AllocationPoints] = randompick[psgrand](0, 1, 1, 2, 2, 2, 2, 2, 3, 3, 3, random[psgrand](3, 6));
+				psg.InitializeWepStats(false);
+			}
+			Stop;
 	}
 }
 
