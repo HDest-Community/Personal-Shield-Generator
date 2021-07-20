@@ -294,11 +294,13 @@ class HDPersonalShieldGenerator : HDWeapon
 				{
 					if (JustPressed(BT_ATTACK) && invoker.WeaponStatus[PSProp_CapPoints + invoker.Selection] > 0)
 					{
+						A_StartSound("PSG/Adjust", 10);
 						invoker.WeaponStatus[PSProp_CapPoints + invoker.Selection]--;
 						invoker.WeaponStatus[PSProp_AllocationPoints]++;
 					}
 					else if (JustPressed(BT_ALTATTACK) && invoker.WeaponStatus[PSProp_CapPoints + invoker.Selection] < invoker.Sliders.Size() - 1 && invoker.WeaponStatus[PSProp_AllocationPoints] > 0)
 					{
+						A_StartSound("PSG/Adjust", 10);
 						invoker.WeaponStatus[PSProp_CapPoints + invoker.Selection]++;
 						invoker.WeaponStatus[PSProp_AllocationPoints]--;
 					}
@@ -356,6 +358,7 @@ class HDPersonalShieldGenerator : HDWeapon
 			TNT1 A 5
 			{
 				invoker.Enabled = !invoker.Enabled;
+				A_StartSound("PSG/Toggle", 9, pitch: invoker.Enabled ? 1.0 : 0.8);
 			}
 			Goto Nope;
 		ReloadEnd:

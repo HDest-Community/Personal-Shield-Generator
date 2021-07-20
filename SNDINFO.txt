@@ -1,0 +1,3 @@
+PSG/Adjust PSGADJST
+PSG/Toggle PSGTOGGL
+$volume PSG/Toggle 0.5
