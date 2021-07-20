@@ -54,7 +54,7 @@ class HDPersonalShieldGenerator : HDWeapon
 
 	override bool AddSpareWeapon(actor newowner) { return AddSpareWeaponRegular(newowner); }
 	override HDWeapon GetSpareWeapon(actor newowner , bool reverse, bool doselect) { return GetSpareWeaponRegular(newowner, reverse, doselect); }
-	override string, double GetPickupSprite() { return GetBatteriesLoaded(1) > 0 ? "PSGND0" : "PSGNA0", 0.2; }
+	override string, double GetPickupSprite() { return GetBatteriesLoaded(1) > 0 && Enabled ? "PSGND0" : "PSGNA0", 0.2; }
 	override string GetHelpText()
 	{
 		string BaseString = WEPHELP_RELOAD.."  Reload battery\n"
@@ -66,13 +66,30 @@ class HDPersonalShieldGenerator : HDWeapon
 		return BaseString;
 	}
 	override double WeaponBulk() { return 40 + GetBatteriesLoaded() * ENC_BATTERY_LOADED; }
+	override void LoadoutConfigure(string input)
+	{
+		InitializeWepStats(false);
+		int noenergy = GetLoadoutVar(input, "noenergy", 1);
+		if (noenergy > 0)
+		{
+			WeaponStatus[PSProp_AllocationPoints] = 0;
+		}
+		else
+		{
+			int energy = GetLoadoutVar(input, "energy", 1);
+			if (energy > 0)
+			{
+				WeaponStatus[PSProp_AllocationPoints] = min(energy, 6);
+			}
+		}
+	}
 	override void InitializeWepStats(bool idfa)
 	{
 		WeaponStatus[PSProp_Battery1] = 20;
 		WeaponStatus[PSProp_Battery2] = 20;
 		WeaponStatus[PSProp_Battery3] = 20;
 		WeaponStatus[PSProp_Degradation] = 0;
-		WeaponStatus[PSProp_AllocationPoints] = 3;
+		WeaponStatus[PSProp_AllocationPoints] = 2;
 		WeaponStatus[PSProp_CapPoints] = 0;
 		WeaponStatus[PSProp_EffPoints] = 0;
 		WeaponStatus[PSProp_RchPoints] = 0;
@@ -114,11 +131,15 @@ class HDPersonalShieldGenerator : HDWeapon
 	override void DoEffect()
 	{
 		Super.DoEffect();
+		
+		Icon = TexMan.CheckForTexture(GetPickupSprite(), TexMan.Type_Any);
+
 		int batteries = GetBatteriesLoaded(1);
 		if (batteries == 0)
 		{
 			return;
 		}
+
 		int efficiency = GetAdjustedEfficiency(Efficiencies[WeaponStatus[PSProp_EffPoints]], WeaponStatus[PSProp_Degradation]);
 		if (WeaponStatus[PSProp_ShieldRegenerated] >= efficiency)
 		{
@@ -137,8 +158,7 @@ class HDPersonalShieldGenerator : HDWeapon
 		}
 	}
 
-	// [Ace] This should be clearscope, but for some reason LZDoom shits the bed so I can't test it.
-	int GetBatteriesLoaded(int minCharge = 0) const
+	clearscope int GetBatteriesLoaded(int minCharge = 0)
 	{
 		int num = 0;
 		for (int i = PSProp_Battery1; i <= PSProp_Battery3; ++i)
@@ -182,7 +202,7 @@ class HDPersonalShieldGenerator : HDWeapon
 		int Offset = WeaponStatus[PSProp_UseOffset];
 		bob.y += Offset;
 		
-		sb.DrawImage(GetBatteriesLoaded(1) > 0 ? "PSGND0" : "PSGNA0", (0, 0) + bob, sb.DI_SCREEN_CENTER | sb.DI_ITEM_CENTER, alpha: 1.0, scale:(2, 2));
+		sb.DrawImage(GetPickupSprite(), (0, 0) + bob, sb.DI_SCREEN_CENTER | sb.DI_ITEM_CENTER, alpha: 1.0, scale:(2, 2));
 		for (int i = 0; i < 3; ++i)
 		{
 			// The batmobile won't start.
@@ -235,7 +255,11 @@ class HDPersonalShieldGenerator : HDWeapon
 		str = selCol.."RCH "..Sliders[pts]..": \c-"..String.Format("%.1f", HDPersonalShield.RechargeTics - pts * 1.5);
 		sb.DrawString(sb.pSmallFont, str, (16, 5 - sb.pSmallFont.mFont.GetHeight() / 2) + bob, sb.DI_SCREEN_CENTER | sb.DI_TEXT_ALIGN_LEFT, Font.CR_GREEN);
 
-		sb.DrawString(sb.pSmallFont, Enabled ? "\c[Green]Enabled\c-" : "\c[Red]Disabled\c-", (16, 15 - sb.pSmallFont.mFont.GetHeight() / 2) + bob, sb.DI_SCREEN_CENTER | sb.DI_TEXT_ALIGN_LEFT, efcol);
+		// Energy.
+		sb.DrawString(sb.pSmallFont, "\c[Olive]Unalloc. energy: \c-"..sb.FormatNumber(hdw.WeaponStatus[PSProp_AllocationPoints], 1, 2), (16, 15 - sb.pSmallFont.mFont.GetHeight() / 2) + bob, sb.DI_SCREEN_CENTER | sb.DI_TEXT_ALIGN_LEFT, Font.CR_GREEN);
+
+		// Status.
+		sb.DrawString(sb.pSmallFont, Enabled ? "\c[Green]Enabled\c-" : "\c[Red]Disabled\c-", (16, 25 - sb.pSmallFont.mFont.GetHeight() / 2) + bob, sb.DI_SCREEN_CENTER | sb.DI_TEXT_ALIGN_LEFT);
 	}
 
 	static const string Sliders[] = { "([]------)", "(---[]---)", "(------[])" };
@@ -262,8 +286,12 @@ class HDPersonalShieldGenerator : HDWeapon
 	States
 	{
 		Spawn:
+			PSGN A 0 A_JumpIf(invoker.GetBatteriesLoaded(1) == 0, 'SpawnEmpty');
 			PSGN AAAABCDEFG 2;
 			Loop;
+		SpawnEmpty:
+			PSGN A -1;
+			Stop;
 		Select:
 			TNT1 A 0 A_AddOffset(100);
 			Goto Super::Select;
