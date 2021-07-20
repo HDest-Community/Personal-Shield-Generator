@@ -355,7 +355,7 @@ class HDPersonalShieldGenerator : HDWeapon
 			}
 			Goto ReloadEnd;
 		Zoom:
-			TNT1 A 5
+			TNT1 A 15
 			{
 				invoker.Enabled = !invoker.Enabled;
 				A_StartSound("PSG/Toggle", 9, pitch: invoker.Enabled ? 1.0 : 0.8);

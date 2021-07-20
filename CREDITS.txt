@@ -4,5 +4,8 @@ Code:
 Sprites:
 - Conveniently taken from Russian Overkill.
 
+Sounds:
+- Conveniently taken from Bullet-Eye.
+
 Idea:
 - LSWraith
