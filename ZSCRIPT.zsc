@@ -84,7 +84,7 @@ class HDPersonalShieldGenerator : HDWeapon
 		let shield = HDPersonalShield(FindInventory('HDPersonalShield'));
 		if (shield)
 		{
-			HDHud.SavedColour = shield.Amount > 0 ? Font.CR_GREEN : Font.CR_RED;
+			HDHud.SavedColour = shield.Amount > 0 ? (Enabled ? Font.CR_GREEN : Font.CR_YELLOW) : Font.CR_RED;
 			return max(0, shield.Amount);
 		}
 		return Super.GetSbarNum(flags);
