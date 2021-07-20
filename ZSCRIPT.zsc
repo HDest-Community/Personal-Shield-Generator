@@ -238,7 +238,7 @@ class HDPersonalShieldGenerator : HDWeapon
 		sb.DrawString(sb.pSmallFont, Enabled ? "\c[Green]Enabled\c-" : "\c[Red]Disabled\c-", (16, 15 - sb.pSmallFont.mFont.GetHeight() / 2) + bob, sb.DI_SCREEN_CENTER | sb.DI_TEXT_ALIGN_LEFT, efcol);
 	}
 
-	static const string Sliders[] = { "([]----------)", "(-----[]-----)", "(----------[])" };
+	static const string Sliders[] = { "([]------)", "(---[]---)", "(------[])" };
 	static const int Capacities[] = { 2500, 5000, 10000 };
 	static const int Efficiencies[] = { 1000, 2000, 3000 };
 	bool Enabled;
