@@ -258,8 +258,8 @@ class HDPersonalShieldGenerator : HDWeapon
 	}
 
 	static const string Sliders[] = { "([]------)", "(---[]---)", "(------[])" };
-	static const int Capacities[] = { 2500, 5000, 10000 };
-	static const int Efficiencies[] = { 1000, 2000, 3000 };
+	static const int Capacities[] = { 1000, 2500, 5000 };
+	static const int Efficiencies[] = { 1000, 1500, 2000 };
 	bool Enabled;
 	private int Selection;
 	private transient CVar InvertSelection;
