@@ -453,7 +453,11 @@ class HDPersonalShield : HDMagicShield
 			return;
 		}
 
-		if (Amount >= 0 && Amount < MaxAmount)
+		if (UnDepleteTimer > 0)
+		{
+			UnDepleteTimer--;
+		}
+		else if (Amount >= 0 && Amount < MaxAmount)
 		{
 			// https://www.desmos.com/calculator/00tiznk9dk
 			int rpts = ShieldGenerator.WeaponStatus[ShieldGenerator.PSProp_RchPoints] + 1;
@@ -471,6 +475,7 @@ class HDPersonalShield : HDMagicShield
 		}
 		else if (Amount < 0)
 		{
+			UnDepleteTimer = 35;
 			Depleted = true;
 			Amount = 0;
 		}
@@ -498,8 +503,9 @@ class HDPersonalShield : HDMagicShield
 
 	const RechargeTics = 5;
 	bool Depleted;
-	double RechargeFrac;
-	HDPersonalShieldGenerator ShieldGenerator;
+	private int UnDepleteTimer;
+	private double RechargeFrac;
+	private HDPersonalShieldGenerator ShieldGenerator;
 
 	Default
 	{
