@@ -61,7 +61,6 @@ class HDPersonalShieldGenerator : HDWeapon
 		..WEPHELP_UNLOAD.."  Unload battery\n"
 		..WEPHELP_FIRE.." or "..WEPHELP_ALTFIRE.."  Allocate points\n"
 		..WEPHELP_FIREMODE.."+"..WEPHELP_FIRE.." or "..WEPHELP_ALTFIRE.."  Cycle selection\n"
-		..WEPHELP_UNLOAD.."  Unload battery\n"
 		..WEPHELP_ZOOM.."  Toggle on/off";
 		return BaseString;
 	}
