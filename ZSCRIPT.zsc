@@ -42,7 +42,7 @@ class HDPersonalShieldGenerator : HDWeapon
 		PSProp_ShieldRegenerated,
 		PSProp_Degradation,
 		PSProp_AllocationPoints,
-		PSProp_CapPoints,
+		PSProp_ThkPoints,
 		PSProp_EffPoints,
 		PSProp_RchPoints
 	}
@@ -210,11 +210,11 @@ class HDPersonalShieldGenerator : HDWeapon
 
 		int batteries = GetBatteriesLoaded(1);
 
-		// Capacity.
-		int pts = hdw.WeaponStatus[PSProp_CapPoints];
+		// Thickness.
+		int pts = hdw.WeaponStatus[PSProp_ThkPoints];
 		string selCol = Selection == 0 ? "\c[Gold]" : "\c[White]";
 
-		string str = selCol.."CAP "..Sliders[pts]..": \c-"..sb.FormatNumber(Capacities[pts], 1, 5);
+		string str = selCol.."THK "..Sliders[pts]..": \c-"..String.Format("%.1f", Thickness[pts]);
 		sb.DrawString(sb.pSmallFont, str, (16, -15 - sb.pSmallFont.mFont.GetHeight() / 2) + bob, sb.DI_SCREEN_CENTER | sb.DI_TEXT_ALIGN_LEFT, Font.CR_GREEN);
 
 		// Efficiency.
@@ -255,7 +255,7 @@ class HDPersonalShieldGenerator : HDWeapon
 	}
 
 	static const string Sliders[] = { "([]------)", "(---[]---)", "(------[])" };
-	static const int Capacities[] = { 1000, 2500, 5000 };
+	static const double Thickness[] = { 1.0, 2.5, 5.0 };
 	static const int Efficiencies[] = { 1000, 1500, 2000 };
 	bool Enabled;
 	private int Selection;
@@ -312,16 +312,16 @@ class HDPersonalShieldGenerator : HDWeapon
 				}
 				else
 				{
-					if (JustPressed(BT_ATTACK) && invoker.WeaponStatus[PSProp_CapPoints + invoker.Selection] > 0)
+					if (JustPressed(BT_ATTACK) && invoker.WeaponStatus[PSProp_ThkPoints + invoker.Selection] > 0)
 					{
 						A_StartSound("PSG/Adjust", 10);
-						invoker.WeaponStatus[PSProp_CapPoints + invoker.Selection]--;
+						invoker.WeaponStatus[PSProp_ThkPoints + invoker.Selection]--;
 						invoker.WeaponStatus[PSProp_AllocationPoints]++;
 					}
-					else if (JustPressed(BT_ALTATTACK) && invoker.WeaponStatus[PSProp_CapPoints + invoker.Selection] < invoker.Sliders.Size() - 1 && invoker.WeaponStatus[PSProp_AllocationPoints] > 0)
+					else if (JustPressed(BT_ALTATTACK) && invoker.WeaponStatus[PSProp_ThkPoints + invoker.Selection] < invoker.Sliders.Size() - 1 && invoker.WeaponStatus[PSProp_AllocationPoints] > 0)
 					{
 						A_StartSound("PSG/Adjust", 10);
-						invoker.WeaponStatus[PSProp_CapPoints + invoker.Selection]++;
+						invoker.WeaponStatus[PSProp_ThkPoints + invoker.Selection]++;
 						invoker.WeaponStatus[PSProp_AllocationPoints]--;
 					}
 				}
@@ -430,7 +430,6 @@ class HDPersonalShield : HDMagicShield
 		}
 
 		int batteries = ShieldGenerator.GetBatteriesLoaded(1);
-		MaxAmount = HDPersonalShieldGenerator.Capacities[ShieldGenerator.WeaponStatus[ShieldGenerator.PSProp_CapPoints]];
 		if (batteries < 3)
 		{
 			ShieldGenerator.Enabled = false;
@@ -500,6 +499,46 @@ class HDPersonalShield : HDMagicShield
 		}
 	}
 
+	override double, double OnBulletImpact(HDBulletActor bullet, double pen, double penshell, double hitangle, double deemedwidth, vector3 hitpos, vector3 vu, bool hitactoristall)
+	{
+		actor victim = owner;
+		if (!victim || !bullet || (bullet.target == victim) || Amount < 1)
+		{
+			return pen, penshell;
+		}
+
+		double bulletpower = pen * bullet.mass * 0.1;
+		if (bulletpower < 1)
+		{
+			bulletpower = int(frandom(0, 1) < bulletpower);
+		}
+
+		int depleteshield = int(min(bulletpower, amount));
+		if (depleteshield <= 0)
+		{
+			return bulletpower == 0 ? 0 : pen, penshell;
+		}
+
+		double thkFac = ShieldGenerator.Thickness[ShieldGenerator.WeaponStatus[ShieldGenerator.PSProp_ThkPoints]];
+
+		HDMagicShield.Deplete(victim, depleteshield, self);
+		Spawn("ShieldNeverBlood", bullet.pos, ALLOW_REPLACE);
+
+		victim.vel += (((victim.pos.xy, victim.pos.z + victim.height * 0.5) - bullet.pos).unit() * depleteshield / victim.mass);
+		victim.angle += deltaangle(victim.angle, victim.angleto(bullet)) * frandom(-0.005, 0.03);
+		victim.pitch += frandom(-1.0, 1.0);
+
+		double addpenshell = min(pen, amount, MaxAmount >> 3);
+		if (addpenshell > 0)
+		{
+			pen -= addpenshell;
+			penshell += addpenshell;
+		}
+
+		bullet.speed /= thkFac;
+		return pen, penshell;
+	}
+
 	const RechargeTics = 5;
 	bool Depleted;
 	private int UnDepleteTimer;
@@ -508,6 +547,7 @@ class HDPersonalShield : HDMagicShield
 
 	Default
 	{
+		Inventory.MaxAmount 2500;
 		+INVENTORY.KEEPDEPLETED
 		HDDamageHandler.Priority 10001; // [Ace] Handle it before the shield from Arcanum (which is just the regular shield).
 	}

@@ -11,7 +11,8 @@
 ### Mechanics
 ---
 - The generator needs three batteries to function. If all batteries are missing or empty, the shield will disappear. With 1 and 2 batteries, the shield will not regenerate.
+- Thickness is how good the shield is at stopping bullets. Thicker shields absorb projectile energy better. Only really affects bullets.
 - Efficiency is how many units of shield need to be recharged for all batteries to lose 1 charge. Each cycle reduces efficiency.
-- You only have a limited number of "points" you can distribute between CAP, EFF, and RCH, so choose wisely.
+- You only have a limited number of "points" you can distribute between THK, EFF, and RCH, so choose wisely.
 - Recharge rate varies depending on shield amount. It peaks at half capacity and goes down as shield depletes or regenerates.
 - Multiple shield generators do not stack due to interference.
