@@ -440,6 +440,10 @@ class HDPersonalShield : HDMagicShield
 			Amount = 0;
 			return;
 		}
+		else
+		{
+			MaxAmount = default.MaxAmount;
+		}
 
 		if (Amount > MaxAmount)
 		{
