@@ -507,7 +507,7 @@ class HDPersonalShield : HDMagicShield
 	override double, double OnBulletImpact(HDBulletActor bullet, double pen, double penshell, double hitangle, double deemedwidth, vector3 hitpos, vector3 vu, bool hitactoristall)
 	{
 		actor victim = owner;
-		if (!victim || !bullet || (bullet.target == victim) || Amount < 1)
+		if (!victim || !bullet || (bullet.target == victim && !bullet.bCANBLAST) || Amount < 1)
 		{
 			return pen, penshell;
 		}
