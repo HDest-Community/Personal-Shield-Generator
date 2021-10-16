@@ -544,8 +544,6 @@ class HDPersonalShield : HDMagicShield
 		return pen, penshell;
 	}
 
-	override void DrawHUDStuff(HDStatusBar sb, HDPlayerPawn hpl, int hdflags, int gzflags) {}
-
 	const RechargeTics = 5;
 	bool Depleted;
 	private int UnDepleteTimer;
