@@ -555,6 +555,6 @@ class HDPersonalShield : HDMagicShield
 		Inventory.MaxAmount 2000;
 		+INVENTORY.KEEPDEPLETED
 		-INVENTORY.INVBAR
-		HDDamageHandler.Priority 10002; // [Ace] Handle it before the shield from Arcanum (which is just the regular shield).
+		HDDamageHandler.Priority 10002; // [Ace] Handle it before the shield from Arcanum.
 	}
 }
