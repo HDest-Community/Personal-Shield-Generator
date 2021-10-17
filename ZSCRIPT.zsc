@@ -54,7 +54,12 @@ class HDPersonalShieldGenerator : HDWeapon
 
 	override bool AddSpareWeapon(actor newowner) { return AddSpareWeaponRegular(newowner); }
 	override HDWeapon GetSpareWeapon(actor newowner , bool reverse, bool doselect) { return GetSpareWeaponRegular(newowner, reverse, doselect); }
-	override string, double GetPickupSprite() { return GetBatteriesLoaded(1) > 0 && Enabled ? "PSGND0" : "PSGNA0", 0.2; }
+	override string, double GetPickupSprite()
+	{
+		int totalPoints = WeaponStatus[PSProp_AllocationPoints] + WeaponStatus[PSProp_ThkPoints] + WeaponStatus[PSProp_EffPoints] + WeaponStatus[PSProp_RchPoints];
+		string main = "PSG"..(totalPoints / 2);
+		return main..(GetBatteriesLoaded(1) > 0 && Enabled ? "B" : "A").."0", 0.2;
+	}
 	override string GetHelpText()
 	{
 		string BaseString = WEPHELP_RELOAD.."  Reload battery\n"
@@ -194,7 +199,7 @@ class HDPersonalShieldGenerator : HDWeapon
 		int Offset = WeaponStatus[PSProp_UseOffset];
 		bob.y += Offset;
 		
-		sb.DrawImage(GetPickupSprite(), (0, 0) + bob, sb.DI_SCREEN_CENTER | sb.DI_ITEM_CENTER, alpha: 1.0, scale:(2, 2));
+		sb.DrawImage(GetPickupSprite(), (0, 0) + bob, sb.DI_SCREEN_CENTER | sb.DI_ITEM_CENTER, box: (20, -1), scale:(2, 2));
 		for (int i = 0; i < 3; ++i)
 		{
 			// The batmobile won't start.
@@ -267,7 +272,7 @@ class HDPersonalShieldGenerator : HDWeapon
 		+INVENTORY.INVBAR
 		+WEAPON.WIMPY_WEAPON
 		-HDWEAPON.DROPTRANSLATION
-		Inventory.Icon "PSGNA0";
+		Inventory.Icon "PSG0A0";
 		Inventory.PickupSound "weapons/pocket";
 		Inventory.PickupMessage "You picked up a personal shield generator.";
 		Tag "Personal Shield Generator";
@@ -277,13 +282,17 @@ class HDPersonalShieldGenerator : HDWeapon
 
 	States
 	{
+		RegisterSprites:
+			PSG0 A 0; PSG1 A 0; PSG2 A 0; PSG3 A 0;
+
 		Spawn:
-			PSGN A 0 A_JumpIf(invoker.GetBatteriesLoaded(1) == 0, 'SpawnEmpty');
-			PSGN AAAABCDEFG 2;
+			PSG0 A 1
+			{
+				string str = invoker.GetPickupSprite();
+				sprite = GetSpriteIndex(str.Left(4));
+				frame = invoker.GetBatteriesLoaded(1) > 0;
+			}
 			Loop;
-		SpawnEmpty:
-			PSGN A -1;
-			Stop;
 		Select:
 			TNT1 A 0 A_AddOffset(100);
 			Goto Super::Select;
