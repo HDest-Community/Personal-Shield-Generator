@@ -1,3 +1,6 @@
+### Important
+- This mod requires [AceCoreLib](https://gitlab.com/accensi/hd-addons/acecorelib).
+
 ### Notes
 ---
 - The Personal Shield Generator can be found both in the wild and in backpacks.

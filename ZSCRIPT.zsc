@@ -69,7 +69,10 @@ class HDPersonalShieldGenerator : HDWeapon
 		..WEPHELP_ZOOM.."  Toggle on/off";
 		return BaseString;
 	}
-	override double WeaponBulk() { return 40 + GetBatteriesLoaded() * ENC_BATTERY_LOADED; }
+	override double WeaponBulk()
+	{
+		int totalPoints = WeaponStatus[PSProp_AllocationPoints] + WeaponStatus[PSProp_ThkPoints] + WeaponStatus[PSProp_EffPoints] + WeaponStatus[PSProp_RchPoints];
+		return 20 * (totalPoints / 2) + GetBatteriesLoaded() * ENC_BATTERY_LOADED; }
 	override void LoadoutConfigure(string input)
 	{
 		InitializeWepStats(false);
@@ -168,26 +171,6 @@ class HDPersonalShieldGenerator : HDWeapon
 		return num;
 	}
 
-	private string GetBatteryIcon(int charge) const
-	{
-		if (charge > 13)
-		{
-			return "CELLA0";
-		}
-		else if (charge > 6)
-		{
-			return "CELLB0";
-		}
-		else if (charge > 0)
-		{
-			return "CELLC0";
-		}
-		else
-		{
-			return "CELLD0";
-		}
-	}
-
 	private int GetAdjustedEfficiency(int base, int degradation) const
 	{
 		return max(0, base - 5 * degradation);
@@ -199,7 +182,7 @@ class HDPersonalShieldGenerator : HDWeapon
 		int Offset = WeaponStatus[PSProp_UseOffset];
 		bob.y += Offset;
 		
-		sb.DrawImage(GetPickupSprite(), (0, 0) + bob, sb.DI_SCREEN_CENTER | sb.DI_ITEM_CENTER, box: (20, -1), scale:(2, 2));
+		sb.DrawImage(GetPickupSprite(), (0, 25) + bob, sb.DI_SCREEN_CENTER | sb.DI_ITEM_CENTER_BOTTOM, box: (20, -1), scale:(2, 2));
 		for (int i = 0; i < 3; ++i)
 		{
 			// The batmobile won't start.
@@ -209,18 +192,25 @@ class HDPersonalShieldGenerator : HDWeapon
 			int tery = hdw.WeaponStatus[PSProp_Battery1 + i];
 			if (tery > -1)
 			{
-				sb.DrawImage(GetBatteryIcon(tery), (-16, -15 + 15 * i) + bob, sb.DI_SCREEN_CENTER | sb.DI_ITEM_RIGHT | sb.DI_ITEM_VCENTER, scale: (1.0, 1.0));
+				string icon; int fontCol;
+				[icon, fontCol] = AceCore.GetBatteryColor(tery);
+				sb.DrawImage(icon, (-14, -11 + 15 * i) + bob, sb.DI_SCREEN_CENTER | sb.DI_ITEM_RIGHT | sb.DI_ITEM_VCENTER, box: (-1, 15));
+				sb.DrawString(sb.mAmountFont, sb.FormatNumber(hdw.WeaponStatus[PSProp_Battery1 + i], 1, 2), (-11, -8 + 15 * i) + bob, sb.DI_SCREEN_CENTER | sb.DI_TEXT_ALIGN_RIGHT, fontCol);
 			}
 		}
 
 		int batteries = GetBatteriesLoaded(1);
+
+		int fontHeight = sb.pSmallFont.mFont.GetHeight() / 2;
+		vector2 pos = (13, -18 - fontHeight);
 
 		// Thickness.
 		int pts = hdw.WeaponStatus[PSProp_ThkPoints];
 		string selCol = Selection == 0 ? "\c[Gold]" : "\c[White]";
 
 		string str = selCol.."THK "..Sliders[pts]..": \c-"..String.Format("%.1f", Thickness[pts]);
-		sb.DrawString(sb.pSmallFont, str, (16, -15 - sb.pSmallFont.mFont.GetHeight() / 2) + bob, sb.DI_SCREEN_CENTER | sb.DI_TEXT_ALIGN_LEFT, Font.CR_GREEN);
+		sb.DrawString(sb.pSmallFont, str, pos + bob, sb.DI_SCREEN_CENTER | sb.DI_TEXT_ALIGN_LEFT, Font.CR_GREEN);
+		pos.y += 10;
 
 		// Efficiency.
 		pts = hdw.WeaponStatus[PSProp_EffPoints];
@@ -244,19 +234,22 @@ class HDPersonalShieldGenerator : HDWeapon
 		}
 		selCol = Selection == 1 ? "\c[Gold]" : "\c[White]";
 		str = selCol.."EFF "..Sliders[pts]..": \c-"..sb.FormatNumber(adjEfficiency, 1, 4).."\c[White]/\c-"..sb.FormatNumber(Efficiencies[pts], 1, 4);
-		sb.DrawString(sb.pSmallFont, str, (16, -5 - sb.pSmallFont.mFont.GetHeight() / 2) + bob, sb.DI_SCREEN_CENTER | sb.DI_TEXT_ALIGN_LEFT, efcol);
+		sb.DrawString(sb.pSmallFont, str, pos + bob, sb.DI_SCREEN_CENTER | sb.DI_TEXT_ALIGN_LEFT, efcol);
+		pos.y += 10;
 
 		// Recharge rate.
 		pts = hdw.WeaponStatus[PSProp_RchPoints];
 		selCol = Selection == 2 ? "\c[Gold]" : "\c[White]";
 		str = selCol.."RCH "..Sliders[pts]..": \c-"..String.Format("%.1f", HDPersonalShield.RechargeTics - pts * 1.5);
-		sb.DrawString(sb.pSmallFont, str, (16, 5 - sb.pSmallFont.mFont.GetHeight() / 2) + bob, sb.DI_SCREEN_CENTER | sb.DI_TEXT_ALIGN_LEFT, Font.CR_GREEN);
+		sb.DrawString(sb.pSmallFont, str, pos + bob, sb.DI_SCREEN_CENTER | sb.DI_TEXT_ALIGN_LEFT, Font.CR_GREEN);
+		pos.y += 10;
 
 		// Energy.
-		sb.DrawString(sb.pSmallFont, "\c[Olive]Unalloc. energy: \c-"..sb.FormatNumber(hdw.WeaponStatus[PSProp_AllocationPoints], 1, 2), (16, 15 - sb.pSmallFont.mFont.GetHeight() / 2) + bob, sb.DI_SCREEN_CENTER | sb.DI_TEXT_ALIGN_LEFT, Font.CR_GREEN);
+		sb.DrawString(sb.pSmallFont, "\c[Olive]Unalloc. energy: \c-"..sb.FormatNumber(hdw.WeaponStatus[PSProp_AllocationPoints], 1, 2), pos + bob, sb.DI_SCREEN_CENTER | sb.DI_TEXT_ALIGN_LEFT, Font.CR_GREEN);
+		pos.y += 10;
 
 		// Status.
-		sb.DrawString(sb.pSmallFont, Enabled ? "\c[Green]Enabled\c-" : "\c[Red]Disabled\c-", (16, 25 - sb.pSmallFont.mFont.GetHeight() / 2) + bob, sb.DI_SCREEN_CENTER | sb.DI_TEXT_ALIGN_LEFT);
+		sb.DrawString(sb.pSmallFont, Enabled ? "\c[Green]Enabled\c-" : "\c[Red]Disabled\c-", pos + bob, sb.DI_SCREEN_CENTER | sb.DI_TEXT_ALIGN_LEFT);
 	}
 
 	static const string Sliders[] = { "([]------)", "(---[]---)", "(------[])" };
@@ -551,6 +544,25 @@ class HDPersonalShield : HDMagicShield
 
 		bullet.speed /= thkFac;
 		return pen, penshell;
+	}
+
+	override void DrawHUDStuff(HDStatusBar sb, HDPlayerPawn hpl, int hdflags, int gzflags)
+	{
+		if (hdflags & HDSB_AUTOMAP || !ShieldGenerator || hpl.InvSel is 'HDPersonalShieldGenerator')
+		{
+			return;
+		}
+		
+		sb.DrawImage(ShieldGenerator.GetPickupSprite(), (100, -3), gzflags | sb.DI_ITEM_LEFT_BOTTOM, box: (10, -1));
+		sb.DrawString(sb.pNewSmallFont, sb.FormatNumber(max(0, Amount), 1, 4), (110, -10), gzflags | sb.DI_TEXT_ALIGN_LEFT, Amount > 0 ? (ShieldGenerator.Enabled ? Font.CR_GREEN : Font.CR_YELLOW) : Font.CR_RED, scale: (0.5, 0.5));
+		for (int i = 0; i < 3; ++i)
+		{
+			int bat = ShieldGenerator.WeaponStatus[ShieldGenerator.PSProp_Battery1 + i];
+			if (bat > -1)
+			{
+				sb.DrawImage(AceCore.GetBatteryColor(bat), (99, -23 + 8 * i), sb.DI_ITEM_RIGHT | sb.DI_ITEM_VCENTER | gzflags, box: (-1, 7));
+			}
+		}
 	}
 
 	const RechargeTics = 5;
