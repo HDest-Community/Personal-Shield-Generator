@@ -6,16 +6,14 @@
 - The Personal Shield Generator can be found both in the wild and in backpacks.
 - Loadout code is `psg`.
 - Configuration codes are:
-	- `energy [1-6]`: Start with this much unallocated energy.
-	- `noenergy`: Start with no unallocated energy.
-- CVars are:
-	- `psg_invert [true/false]`: Inverts the "menu" selection. Client-side CVar.
+	- `points`: Start with this many upgrade points.
 
 ### Mechanics
 ---
 - The generator needs three batteries to function. If all batteries are missing or empty, the shield will disappear. With 1 and 2 batteries, the shield will not regenerate.
+- If the shield disappears, be it due to batteries depleting or dropping the generator or switching between modes, the excess shields will crush you and you will take damage depending on the amount of shield.
 - Thickness is how good the shield is at stopping bullets. Thicker shields absorb projectile energy better. Only really affects bullets.
 - Efficiency is how many units of shield need to be recharged for all batteries to lose 1 charge. Each cycle reduces efficiency.
-- You only have a limited number of "points" you can distribute between THK, EFF, and RCH, so choose wisely.
-- Recharge rate varies depending on shield amount. It peaks at half capacity and goes down as shield depletes or regenerates.
+- Recharge rate varies depending on shield amount and mode. It peaks at half capacity and goes down as shield depletes or regenerates.
 - Multiple shield generators do not stack due to interference.
+- Hold Firemode with your PSG selected when picking up another generator to consume the item and gain upgrade points. This is a passive bonus.
