@@ -54,7 +54,7 @@ class HDPersonalShieldGenerator : HDWeapon
 	override HDWeapon GetSpareWeapon(actor newowner , bool reverse, bool doselect) { return GetSpareWeaponRegular(newowner, reverse, doselect); }
 	override string, double GetPickupSprite()
 	{
-		string main = "PSG"..min(4, (WeaponStatus[PSProp_UpgradePoints] / 3));
+		string main = "PSG"..min(3, (WeaponStatus[PSProp_UpgradePoints] / 3));
 		return main..(GetBatteriesLoaded(1) > 0 && Enabled ? "B" : "A").."0", 0.2;
 	}
 	override string GetHelpText()
@@ -67,7 +67,7 @@ class HDPersonalShieldGenerator : HDWeapon
 	}
 	override double WeaponBulk()
 	{
-		return 20 * min(4, (WeaponStatus[PSProp_UpgradePoints] / 3)) + GetBatteriesLoaded() * ENC_BATTERY_LOADED;
+		return 20 * min(3, (WeaponStatus[PSProp_UpgradePoints] / 3)) + GetBatteriesLoaded() * ENC_BATTERY_LOADED;
 	}
 	override void LoadoutConfigure(string input)
 	{
