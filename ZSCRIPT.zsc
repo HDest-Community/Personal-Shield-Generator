@@ -113,7 +113,7 @@ class HDPersonalShieldGenerator : HDWeapon
 		Super.DoEffect();
 
 		int batteries = GetBatteriesLoaded(1);
-		if (batteries == 0)
+		if (!Enabled)
 		{
 			return;
 		}
@@ -435,14 +435,6 @@ class HDPersonalShield : HDMagicShield
 		if (batteries < 3)
 		{
 			ShieldGenerator.Enabled = false;
-		}
-
-		if (batteries == 0)
-		{
-			Depleted = true;
-			UnDepleteTimer = 0;
-			ChangeMaxAmount(0);
-			return;
 		}
 		else
 		{
