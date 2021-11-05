@@ -245,7 +245,7 @@ class HDPersonalShieldGenerator : HDWeapon
 		}
 
 		int relative = adj - (base + extra);
-		str = String.Format("EFF: \c[Teal]%i\c-/%s%i \c[DarkGray](%s%i)\c-", WeaponStatus[PSProp_ShieldRegenerated], efcol, adj, (relative >= 0 ? "+" : ""), relative);
+		str = String.Format("EFF: \c[Teal]%i\c-/%s%i \c[DarkGray](%s%i)\c-", adj - WeaponStatus[PSProp_ShieldRegenerated], efcol, adj, (relative >= 0 ? "+" : ""), relative);
 		sb.DrawString(sb.pSmallFont, str, pos + bob, sb.DI_SCREEN_CENTER | sb.DI_TEXT_ALIGN_LEFT, Font.CR_WHITE);
 		pos.y += 10;
 
