@@ -14,7 +14,7 @@ class PsgHandler : EventHandler
 			case 'BattleArmour':
 				if (random[psgrand]() <= 48)
 				{
-					e.Replacement = 'HDPersonalShieldGenerator';
+					e.Replacement = 'PsgRandom';
 				}
 				break;
 		}
@@ -32,7 +32,14 @@ class PsgHandler : EventHandler
 
 class HDPersonalShieldGenerator : HDWeapon
 {
-	enum PSProperty
+	enum PSlags
+	{
+		PSF_Elemental = 1,
+		PSF_Regeneration = 2,
+		PSF_Medical = 4,
+	}
+
+	enum PSProperties
 	{
 		PSProp_Flags,
 		PSProp_UseOffset,
@@ -76,6 +83,18 @@ class HDPersonalShieldGenerator : HDWeapon
 		if (points > 0)
 		{
 			WeaponStatus[PSProp_UpgradePoints] = points;
+		}
+		if (GetLoadoutVar(input, "elem", 1) > 0)
+		{
+			WeaponStatus[PSProp_Flags] |= PSF_Regeneration;
+		}
+		if (GetLoadoutVar(input, "regen", 1) > 0)
+		{
+			WeaponStatus[PSProp_Flags] |= PSF_Regeneration;
+		}
+		if (GetLoadoutVar(input, "medical", 1) > 0)
+		{
+			WeaponStatus[PSProp_Flags] |= PSF_Medical;
 		}
 	}
 	override void InitializeWepStats(bool idfa)
@@ -206,6 +225,8 @@ class HDPersonalShieldGenerator : HDWeapon
 		int fontHeight = sb.pSmallFont.mFont.GetHeight() / 2;
 		vector2 pos = (13, -18 - fontHeight);
 
+		string hiLoStr = WeaponStatus[PSProp_Mode] == 1 ? "\c[Green]High\c-" : "\c[Red]Low\c-";
+
 		// Mode.
 		string str = String.Format("MOD "..Modes[WeaponStatus[PSProp_Mode]]);
 		sb.DrawString(sb.pSmallFont, str, pos + bob, sb.DI_SCREEN_CENTER | sb.DI_TEXT_ALIGN_LEFT, Font.CR_GOLD);
@@ -219,8 +240,7 @@ class HDPersonalShieldGenerator : HDWeapon
 		pos.y += 10;
 
 		// Thickness.
-		str = String.Format("THK: %s", WeaponStatus[PSProp_Mode] == 1 ? "\c[Green]High\c-" : "\c[Red]Low\c-");
-		sb.DrawString(sb.pSmallFont, str, pos + bob, sb.DI_SCREEN_CENTER | sb.DI_TEXT_ALIGN_LEFT, Font.CR_WHITE);
+		sb.DrawString(sb.pSmallFont, "THK: "..hiLoStr, pos + bob, sb.DI_SCREEN_CENTER | sb.DI_TEXT_ALIGN_LEFT, Font.CR_WHITE);
 		pos.y += 10;
 
 		// Efficiency.
@@ -250,9 +270,24 @@ class HDPersonalShieldGenerator : HDWeapon
 		pos.y += 10;
 
 		// Recharge rate.
-		str = String.Format("RCH: %s", WeaponStatus[PSProp_Mode] == 1 ? "\c[Green]High\c-" : "\c[Red]Low\c-");
-		sb.DrawString(sb.pSmallFont, str, pos + bob, sb.DI_SCREEN_CENTER | sb.DI_TEXT_ALIGN_LEFT, Font.CR_WHITE);
+		sb.DrawString(sb.pSmallFont, "RCH: "..hiLoStr, pos + bob, sb.DI_SCREEN_CENTER | sb.DI_TEXT_ALIGN_LEFT, Font.CR_WHITE);
 		pos.y += 10;
+
+		if (WeaponStatus[PSProp_Flags] & PSF_Elemental)
+		{
+			sb.DrawString(sb.pSmallFont, "ENV: "..hiLoStr, pos + bob, sb.DI_SCREEN_CENTER | sb.DI_TEXT_ALIGN_LEFT, Font.CR_WHITE);
+			pos.y += 10;
+		}
+		if (WeaponStatus[PSProp_Flags] & PSF_Regeneration)
+		{
+			sb.DrawString(sb.pSmallFont, "REG: "..hiLoStr, pos + bob, sb.DI_SCREEN_CENTER | sb.DI_TEXT_ALIGN_LEFT, Font.CR_WHITE);
+			pos.y += 10;
+		}
+		if (WeaponStatus[PSProp_Flags] & PSF_Medical)
+		{
+			sb.DrawString(sb.pSmallFont, "MED: "..hiLoStr, pos + bob, sb.DI_SCREEN_CENTER | sb.DI_TEXT_ALIGN_LEFT, Font.CR_WHITE);
+			pos.y += 10;
+		}
 
 		// Status.
 		sb.DrawString(sb.pSmallFont, Enabled ? "\c[Green]Enabled\c-" : "\c[Red]Disabled\c-", pos + bob, sb.DI_SCREEN_CENTER | sb.DI_TEXT_ALIGN_LEFT);
@@ -275,6 +310,14 @@ class HDPersonalShieldGenerator : HDWeapon
 			return;
 		}
 		Super.ActualPickup(other, silent);
+	}
+
+	override string PickupMessage()
+	{
+		string elemStr = WeaponStatus[PSProp_Flags] & PSF_Elemental ? "protective " : "";
+		string regenStr = WeaponStatus[PSProp_Flags] & PSF_Regeneration ? "regenerative " : "";
+		string medStr = WeaponStatus[PSProp_Flags] & PSF_Medical ? " with a medical field" : "";
+		return String.Format("You picked up a %s%s personal shield generator%s.", elemStr, regenStr, medStr);
 	}
 
 	static const string Modes[] = { "([]------):\c[Green] Standard\c-", "(------[]):\c[Red] Overcharged\c-" };
@@ -392,6 +435,33 @@ class HDPersonalShieldGenerator : HDWeapon
 	}
 }
 
+class PsgRandom : IdleDummy
+{
+	States
+	{
+		Spawn:
+			TNT1 A 0 nodelay
+			{
+				let psg = HDPersonalShieldGenerator(Spawn("HDPersonalShieldGenerator", pos, ALLOW_REPLACE));
+				if (!psg)
+				{
+					return;
+				}
+
+				HDF.TransferSpecials(self, psg);
+				for (int i = 0; i < 3; ++i)
+				{
+					if (!random[psgrand](0, 3))
+					{
+						psg.WeaponStatus[psg.PSProp_Flags] |= (1 << i);
+					}
+				}
+				psg.InitializeWepStats(false);
+			}
+			Stop;
+	}
+}
+
 class HDPersonalShield : HDMagicShield
 {
 	void ChangeMaxAmount(int newMax)
@@ -420,10 +490,10 @@ class HDPersonalShield : HDMagicShield
 			return;
 		}
 
-		if (!ShieldGenerator || !ShieldGenerator.owner)
+		if (!SGen || !SGen.owner)
 		{
-			ShieldGenerator = HDPersonalShieldGenerator(owner.FindInventory('HDPersonalShieldGenerator'));
-			if (!ShieldGenerator)
+			SGen = HDPersonalShieldGenerator(owner.FindInventory('HDPersonalShieldGenerator'));
+			if (!SGen)
 			{
 				ChangeMaxAmount(0);
 				Destroy();
@@ -431,22 +501,41 @@ class HDPersonalShield : HDMagicShield
 			}
 		}
 
-		int batteries = ShieldGenerator.GetBatteriesLoaded(1);
+		int batteries = SGen.GetBatteriesLoaded(1);
 		if (batteries < 3)
 		{
-			ShieldGenerator.Enabled = false;
+			SGen.Enabled = false;
 		}
 		else
 		{
 			int base, extra;
-			[base, extra] = ShieldGenerator.GetMaxShield();
+			[base, extra] = SGen.GetMaxShield();
 			int newMax = base + extra;
 			ChangeMaxAmount(newMax);
 		}
 
-		if (!ShieldGenerator.Enabled)
+		if (!SGen.Enabled)
 		{
 			return;
+		}
+
+		let plr = HDPlayerPawn(owner);
+		if (plr && Amount > 0)
+		{
+			bool overcharged = SGen.WeaponStatus[SGen.PSProp_Mode] == 1;
+			if (SGen.WeaponStatus[SGen.PSProp_Flags] & SGen.PSF_Elemental)
+			{
+				plr.A_GiveInventory('HDFireDouse', overcharged ? 5 : 2);
+			}
+			if (SGen.WeaponStatus[SGen.PSProp_Flags] & SGen.PSF_Regeneration && GetAge() % (overcharged ? 20 : 35) == 0 && plr.Health < plr.MaxHealth())
+			{
+				plr.GiveBody(1);
+			}
+			if (SGen.WeaponStatus[SGen.PSProp_Flags] & SGen.PSF_Regeneration && GetAge() % (overcharged ? 20 : 35) == 0 && plr.woundcount > 0)
+			{
+				plr.woundcount--;
+				plr.unstablewoundcount++;
+			}
 		}
 		
 		if (UnDepleteTimer > 0)
@@ -455,11 +544,11 @@ class HDPersonalShield : HDMagicShield
 		}
 		else if (Amount >= 0 && Amount < MaxAmount)
 		{
-			double rate = ShieldGenerator.GetRechargeRate();
+			double rate = SGen.GetRechargeRate();
 			// https://www.desmos.com/calculator/bnngtfuad4
 
 			double div = 2;
-			if (ShieldGenerator.WeaponStatus[ShieldGenerator.PSProp_Mode] == 1)
+			if (SGen.WeaponStatus[SGen.PSProp_Mode] == 1)
 			{
 				div = 1.43;
 			} 
@@ -471,12 +560,21 @@ class HDPersonalShield : HDMagicShield
 			{
 				RechargeFrac -= adj;
 				Amount = min(Amount + 1, MaxAmount);
-				ShieldGenerator.WeaponStatus[ShieldGenerator.PSProp_ShieldRegenerated]++;
+				SGen.WeaponStatus[SGen.PSProp_ShieldRegenerated]++;
 			}
 		}
 		else if (Amount < 0)
 		{
-			UnDepleteTimer = 105;
+			UnDepleteTimer = 35 * 3;
+
+			// [Ace] For each upgrade, add 3 seconds reactivation delay.
+			for (int i = 0; i < 3; ++i)
+			{
+				if (SGen.WeaponStatus[SGen.PSProp_Flags] & (1 << i))
+				{
+					UnDepleteTimer += 35 * 3;
+				}
+			}
 			Depleted = true;
 			Amount = 0;
 		}
@@ -502,22 +600,22 @@ class HDPersonalShield : HDMagicShield
 
 	override double, double OnBulletImpact(HDBulletActor bullet, double pen, double penshell, double hitangle, double deemedwidth, vector3 hitpos, vector3 vu, bool hitactoristall)
 	{
-		bullet.speed /= ShieldGenerator.GetThickness();
+		bullet.speed /= SGen.GetThickness();
 		return Super.OnBulletImpact(bullet, pen, penshell, hitangle, deemedwidth, hitpos, vu, hitactoristall);
 	}
 
 	override void DrawHUDStuff(HDStatusBar sb, HDPlayerPawn hpl, int hdflags, int gzflags)
 	{
-		if (hdflags & HDSB_AUTOMAP || !ShieldGenerator || hpl.InvSel is 'HDPersonalShieldGenerator')
+		if (hdflags & HDSB_AUTOMAP || !SGen || hpl.InvSel is 'HDPersonalShieldGenerator')
 		{
 			return;
 		}
 		
-		sb.DrawImage(ShieldGenerator.GetPickupSprite(), (100, -3), gzflags | sb.DI_ITEM_LEFT_BOTTOM, box: (10, -1));
-		sb.DrawString(sb.pNewSmallFont, sb.FormatNumber(max(0, Amount), 1, 6), (110, -10), gzflags | sb.DI_TEXT_ALIGN_LEFT, Amount > 0 ? (ShieldGenerator.Enabled ? Font.CR_GREEN : Font.CR_YELLOW) : Font.CR_RED, scale: (0.5, 0.5));
+		sb.DrawImage(SGen.GetPickupSprite(), (100, -3), gzflags | sb.DI_ITEM_LEFT_BOTTOM, box: (10, -1));
+		sb.DrawString(sb.pNewSmallFont, sb.FormatNumber(max(0, Amount), 1, 6), (110, -10), gzflags | sb.DI_TEXT_ALIGN_LEFT, Amount > 0 ? (SGen.Enabled ? Font.CR_GREEN : Font.CR_YELLOW) : Font.CR_RED, scale: (0.5, 0.5));
 		for (int i = 0; i < 3; ++i)
 		{
-			int bat = ShieldGenerator.WeaponStatus[ShieldGenerator.PSProp_Battery1 + i];
+			int bat = SGen.WeaponStatus[SGen.PSProp_Battery1 + i];
 			if (bat > -1)
 			{
 				sb.DrawImage(AceCore.GetBatteryColor(bat), (99, -23 + 8 * i), sb.DI_ITEM_RIGHT | sb.DI_ITEM_VCENTER | gzflags, box: (-1, 7));
@@ -529,7 +627,7 @@ class HDPersonalShield : HDMagicShield
 	bool Depleted;
 	private int UnDepleteTimer;
 	private double RechargeFrac;
-	private HDPersonalShieldGenerator ShieldGenerator;
+	private HDPersonalShieldGenerator SGen;
 
 	Default
 	{
