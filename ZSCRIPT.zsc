@@ -160,7 +160,7 @@ class HDPersonalShieldGenerator : HDWeapon
 
 	double GetThickness() const
 	{
-		return WeaponStatus[PSProp_Mode] == 1 ? 2.5 : 1.0;
+		return WeaponStatus[PSProp_Mode] == 1 ? 4.0 : 2.0;
 	}
 
 	private int, int GetEfficiency() const
