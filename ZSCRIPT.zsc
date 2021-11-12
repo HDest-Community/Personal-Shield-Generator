@@ -525,7 +525,7 @@ class HDPersonalShield : HDMagicShield
 			bool overcharged = SGen.WeaponStatus[SGen.PSProp_Mode] == 1;
 			if (SGen.WeaponStatus[SGen.PSProp_Flags] & SGen.PSF_Elemental)
 			{
-				plr.A_GiveInventory('HDFireDouse', overcharged ? 5 : 2);
+				plr.A_GiveInventory('HDFireDouse', overcharged ? 2 : 1);
 			}
 			if (SGen.WeaponStatus[SGen.PSProp_Flags] & SGen.PSF_Regeneration && GetAge() % (overcharged ? 20 : 35) == 0 && plr.Health < plr.MaxHealth())
 			{
