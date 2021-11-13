@@ -8,8 +8,8 @@
 - Configuration codes are:
 	- `points`: Start with this many upgrade points.
 	- `elem`: Shield will help extinguish fire.
-	- `regen`: Shield will provide slow health regeneration.
-	- `medical`: Shield will help close wounds.
+	- `medical`: Shield will help close wounds, regenerate health, and heal burns.
+	- `shock`: Shield will damage latched babuins and eventually kill them.
 
 ### Mechanics
 ---
