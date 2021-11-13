@@ -523,10 +523,13 @@ class HDPersonalShield : HDMagicShield
 		if (plr && Amount > 0)
 		{
 			bool overcharged = SGen.WeaponStatus[SGen.PSProp_Mode] == 1;
-			if (SGen.WeaponStatus[SGen.PSProp_Flags] & SGen.PSF_Elemental && plr.CountInv('HDFireDouse') < 20)
+			if (SGen.WeaponStatus[SGen.PSProp_Flags] & SGen.PSF_Elemental)
 			{
 				plr.A_GiveInventory('HDFireDouse', overcharged ? 2 : 1);
-				Amount -= 4;
+				if (plr.CountInv('HDFireDouse') < 20)
+				{
+					Amount -= 2;
+				}
 			}
 			if (SGen.WeaponStatus[SGen.PSProp_Flags] & SGen.PSF_Medical)
 			{
@@ -536,7 +539,7 @@ class HDPersonalShield : HDMagicShield
 					{
 						plr.woundcount--;
 						plr.unstablewoundcount++;
-						Amount - 10;
+						Amount -= 10;
 					}
 					if (plr.Health < plr.MaxHealth())
 					{
