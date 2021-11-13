@@ -37,6 +37,7 @@ class HDPersonalShieldGenerator : HDWeapon
 		PSF_Elemental = 1,
 		PSF_Regeneration = 2,
 		PSF_Medical = 4,
+		PSF_Shocking = 8
 	}
 
 	enum PSProperties
@@ -95,6 +96,10 @@ class HDPersonalShieldGenerator : HDWeapon
 		if (GetLoadoutVar(input, "medical", 1) > 0)
 		{
 			WeaponStatus[PSProp_Flags] |= PSF_Medical;
+		}
+		if (GetLoadoutVar(input, "shock", 1) > 0)
+		{
+			WeaponStatus[PSProp_Flags] |= PSF_Shocking;
 		}
 	}
 	override void InitializeWepStats(bool idfa)
@@ -531,10 +536,21 @@ class HDPersonalShield : HDMagicShield
 			{
 				plr.GiveBody(1);
 			}
-			if (SGen.WeaponStatus[SGen.PSProp_Flags] & SGen.PSF_Regeneration && GetAge() % (overcharged ? 20 : 35) == 0 && plr.woundcount > 0)
+			if (SGen.WeaponStatus[SGen.PSProp_Flags] & SGen.PSF_Medical && GetAge() % (overcharged ? 20 : 35) == 0 && plr.woundcount > 0)
 			{
 				plr.woundcount--;
 				plr.unstablewoundcount++;
+			}
+			if (SGen.WeaponStatus[SGen.PSProp_Flags] & SGen.PSF_Shocking && GetAge() % (overcharged ? 5 : 10) == 0)
+			{
+				BlockThingsIterator it = BlockThingsIterator.Create(plr, plr.radius * 2);
+				while (it.Next())
+				{
+					if (it.thing is 'Babuin' && it.thing.Health > 0 && Babuin(it.thing).latchtarget == plr)
+					{
+						it.thing.DamageMobj(self, plr, random(1, 20), 'Electrical');
+					}
+				}
 			}
 		}
 		
