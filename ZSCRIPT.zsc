@@ -549,7 +549,7 @@ class HDPersonalShield : HDMagicShield
 					Amount -= 20;
 				}
 			}
-			if (SGen.WeaponStatus[SGen.PSProp_Flags] & SGen.PSF_Shocking && GetAge() % (overcharged ? 5 : 10) == 0)
+			if (SGen.WeaponStatus[SGen.PSProp_Flags] & SGen.PSF_Shocking && GetAge() % (overcharged ? 3 : 6) == 0)
 			{
 				BlockThingsIterator it = BlockThingsIterator.Create(plr, plr.radius * 2);
 				while (it.Next())
