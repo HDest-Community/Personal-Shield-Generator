@@ -306,6 +306,13 @@ class HDPersonalShieldGenerator : HDWeapon
 			other.A_StartSound("PSG/Upgrade");
 			other.A_Log("Shield generator was stripped for parts.", true);
 			gen.WeaponStatus[PSProp_UpgradePoints] += WeaponStatus[PSProp_UpgradePoints] + 1;
+			for (int i = PSProp_Battery1; i <= PSProp_Battery3; ++i)
+			{
+				if (WeaponStatus[i] >= 0)
+				{
+					HDMagAmmo.GiveMag(other, 'HDBattery', WeaponStatus[i]);
+				}
+			}
 			Destroy();
 			return;
 		}
