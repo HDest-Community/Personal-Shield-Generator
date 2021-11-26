@@ -184,7 +184,7 @@ class HDPersonalShieldGenerator : HDWeapon
 
 	private int, int GetEfficiency() const
 	{
-		return 800, 50 * WeaponStatus[PSProp_UpgradePoints];
+		return 800, 20 * WeaponStatus[PSProp_UpgradePoints];
 	}
 
 	private int GetAdjustedEfficiency(int base, int degradation) const
