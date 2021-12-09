@@ -172,9 +172,9 @@ class HDPersonalShieldGenerator : HDWeapon
 
 	int, int GetMaxShield() const
 	{
-		int base = WeaponStatus[PSProp_Mode] == 1 ? 2000 : 500;
-		int extra = WeaponStatus[PSProp_Mode] == 1 ? 200 : 50;
-		return 500, extra * WeaponStatus[PSProp_UpgradePoints];
+		int base = WeaponStatus[PSProp_Mode] == 1 ? 1500 : 500;
+		int extra = WeaponStatus[PSProp_Mode] == 1 ? 150 : 50;
+		return base, extra * WeaponStatus[PSProp_UpgradePoints];
 	}
 
 	double GetThickness() const
