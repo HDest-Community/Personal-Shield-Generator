@@ -66,11 +66,11 @@ class HDPersonalShieldGenerator : HDWeapon
 	}
 	override string GetHelpText()
 	{
-		string BaseString = WEPHELP_RELOAD.."  Reload battery\n"
+		return WEPHELP_RELOAD.."  Reload battery\n"
 		..WEPHELP_UNLOAD.."  Unload battery\n"
 		..WEPHELP_FIRE.." or "..WEPHELP_ALTFIRE.."  Change slider position\n"
-		..WEPHELP_ZOOM.."  Toggle on/off";
-		return BaseString;
+		..WEPHELP_ZOOM.."  Toggle on/off\n"
+		..WEPHELP_FIREMODE.."+"..WEPHELP_USE.."  Strip picked up generator";
 	}
 	override double WeaponBulk()
 	{
