@@ -478,7 +478,7 @@ class HDPersonalShield : HDMagicShield
 		if (Amount > newMax)
 		{
 			// [Ace] Where do you think that extra shield goes?
-			owner.DamageMobj(self, self, (Amount - newMax) >> 5, 'Bashing', DMG_NO_ARMOR | DMG_FORCED);
+			owner.DamageMobj(self, self, (Amount - newMax) >> 4, 'Bashing', DMG_NO_ARMOR | DMG_FORCED);
 			Amount = MaxAmount;
 
 			owner.A_StartSound("misc/mobshieldx", CHAN_BODY, CHANF_OVERLAP, 0.75);
