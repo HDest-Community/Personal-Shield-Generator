@@ -61,7 +61,7 @@ class HDPersonalShieldGenerator : HDWeapon
 	override HDWeapon GetSpareWeapon(actor newowner , bool reverse, bool doselect) { return GetSpareWeaponRegular(newowner, reverse, doselect); }
 	override string, double GetPickupSprite()
 	{
-		string main = "PSG"..min(Tiers - 1, (WeaponStatus[PSProp_UpgradePoints] / PointsPerTier));
+		string main = "PSG"..min(Tiers, (WeaponStatus[PSProp_UpgradePoints] / PointsPerTier));
 		return main..(GetBatteriesLoaded(1) > 0 && Enabled ? "B" : "A").."0", 0.2;
 	}
 	override string GetHelpText()
@@ -74,7 +74,7 @@ class HDPersonalShieldGenerator : HDWeapon
 	}
 	override double WeaponBulk()
 	{
-		return 20 + 20 * min(Tiers - 1, (WeaponStatus[PSProp_UpgradePoints] / PointsPerTier)) + GetBatteriesLoaded() * ENC_BATTERY_LOADED;
+		return 20 + 20 * min(Tiers, (WeaponStatus[PSProp_UpgradePoints] / PointsPerTier)) + GetBatteriesLoaded() * ENC_BATTERY_LOADED;
 	}
 	override void LoadoutConfigure(string input)
 	{
@@ -184,7 +184,7 @@ class HDPersonalShieldGenerator : HDWeapon
 
 	private int, int GetEfficiency() const
 	{
-		return 800, 20 * WeaponStatus[PSProp_UpgradePoints];
+		return 600, 20 * WeaponStatus[PSProp_UpgradePoints];
 	}
 
 	private int GetAdjustedEfficiency(int base, int degradation) const
@@ -203,7 +203,7 @@ class HDPersonalShieldGenerator : HDWeapon
 		int Offset = WeaponStatus[PSProp_UseOffset];
 		bob.y += Offset;
 		
-		sb.DrawImage(GetPickupSprite(), (0, 25) + bob, sb.DI_SCREEN_CENTER | sb.DI_ITEM_CENTER_BOTTOM, box: (20, -1), scale:(2, 2));
+		sb.DrawImage(GetPickupSprite(), (0, 25) + bob, sb.DI_SCREEN_CENTER | sb.DI_ITEM_CENTER_BOTTOM, box: (40, -1), scale:(2, 2));
 		for (int i = 0; i < 3; ++i)
 		{
 			// The batmobile won't start.
@@ -215,15 +215,15 @@ class HDPersonalShieldGenerator : HDWeapon
 			{
 				string icon; int fontCol;
 				[icon, fontCol] = AceCore.GetBatteryColor(tery);
-				sb.DrawImage(icon, (-14, -11 + 15 * i) + bob, sb.DI_SCREEN_CENTER | sb.DI_ITEM_RIGHT | sb.DI_ITEM_VCENTER, box: (-1, 15));
-				sb.DrawString(sb.mAmountFont, sb.FormatNumber(hdw.WeaponStatus[PSProp_Battery1 + i], 1, 2), (-12, -8 + 15 * i) + bob, sb.DI_SCREEN_CENTER | sb.DI_TEXT_ALIGN_RIGHT, fontCol);
+				sb.DrawImage(icon, (-24, -11 + 15 * i) + bob, sb.DI_SCREEN_CENTER | sb.DI_ITEM_RIGHT | sb.DI_ITEM_VCENTER, box: (-1, 15));
+				sb.DrawString(sb.mAmountFont, sb.FormatNumber(hdw.WeaponStatus[PSProp_Battery1 + i], 1, 2), (-22, -8 + 15 * i) + bob, sb.DI_SCREEN_CENTER | sb.DI_TEXT_ALIGN_RIGHT, fontCol);
 			}
 		}
 
 		int batteries = GetBatteriesLoaded(1);
 
 		int fontHeight = sb.pSmallFont.mFont.GetHeight() / 2;
-		vector2 pos = (13, -18 - fontHeight);
+		vector2 pos = (23, -18 - fontHeight);
 
 		string hiLoStr = WeaponStatus[PSProp_Mode] == 1 ? "\c[Green]High\c-" : "\c[Red]Low\c-";
 
@@ -305,7 +305,18 @@ class HDPersonalShieldGenerator : HDWeapon
 			let gen = HDPersonalShieldGenerator(other.FindInventory('HDPersonalShieldGenerator'));
 			other.A_StartSound("PSG/Upgrade");
 			other.A_Log("Shield generator was stripped for parts.", true);
-			gen.WeaponStatus[PSProp_UpgradePoints] += WeaponStatus[PSProp_UpgradePoints] + 1;
+
+			int pointsRemaining = WeaponStatus[PSProp_UpgradePoints] + 1;
+
+			int toSpend = min(pointsRemaining, Tiers * PointsPerTier - gen.WeaponStatus[PSProp_UpgradePoints]);
+			gen.WeaponStatus[PSProp_UpgradePoints] += toSpend;
+
+			pointsRemaining -= toSpend;
+			if (pointsRemaining > 0)
+			{
+				gen.WeaponStatus[PSProp_Degradation] = max(0, gen.WeaponStatus[PSProp_Degradation] - 20 * pointsRemaining);
+			}
+
 			gen.WeaponStatus[PSProp_Flags] |= WeaponStatus[PSProp_Flags];
 			for (int i = PSProp_Battery1; i <= PSProp_Battery3; ++i)
 			{
@@ -329,7 +340,7 @@ class HDPersonalShieldGenerator : HDWeapon
 	}
 
 	const PointsPerTier = 10;
-	const Tiers = 8;
+	const Tiers = 7; // [Ace] Actually Tiers + 1 because it's zero-based, so Tier 0 counts as Tier 1.
 	static const string Modes[] = { "([]------):\c[Green] Standard\c-", "(------[]):\c[Red] Overcharged\c-" };
 	bool Enabled;
 
@@ -339,6 +350,7 @@ class HDPersonalShieldGenerator : HDWeapon
 		+INVENTORY.INVBAR
 		+WEAPON.WIMPY_WEAPON
 		-HDWEAPON.DROPTRANSLATION
+		+BRIGHT
 		Inventory.Icon "PSG0A0";
 		Inventory.PickupSound "weapons/pocket";
 		Inventory.PickupMessage "You picked up a personal shield generator.";
@@ -458,13 +470,22 @@ class PsgRandom : IdleDummy
 					return;
 				}
 
-				HDF.TransferSpecials(self, psg);
-				for (int i = 0; i < 3; ++i)
+				for (int i = 0; i < psg.Tiers * psg.PointsPerTier; ++i)
 				{
-					if (!random[psgrand](0, 3))
+					if (random[psgrand](0, 1))
 					{
-						psg.WeaponStatus[psg.PSProp_Flags] |= (1 << i);
+						psg.WeaponStatus[PSProp_UpgradePoints] =+ randompick[psgrand](1, 1, 1, 2, 2, 3);
 					}
+					else
+					{
+						break;
+					}
+				}
+
+				HDF.TransferSpecials(self, psg);
+				if (!random[psgrand](0, 5))
+				{
+					psg.WeaponStatus[psg.PSProp_Flags] |= (1 << random[psgrand](0, 2));
 				}
 				psg.InitializeWepStats(false);
 			}
