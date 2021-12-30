@@ -474,7 +474,7 @@ class PsgRandom : IdleDummy
 				{
 					if (random[psgrand](0, 1))
 					{
-						psg.WeaponStatus[PSProp_UpgradePoints] =+ randompick[psgrand](1, 1, 1, 2, 2, 3);
+						psg.WeaponStatus[psg.PSProp_UpgradePoints] += randompick[psgrand](1, 1, 1, 2, 2, 3);
 					}
 					else
 					{
