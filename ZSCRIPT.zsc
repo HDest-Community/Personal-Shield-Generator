@@ -61,7 +61,7 @@ class HDPersonalShieldGenerator : HDWeapon
 	override HDWeapon GetSpareWeapon(actor newowner , bool reverse, bool doselect) { return GetSpareWeaponRegular(newowner, reverse, doselect); }
 	override string, double GetPickupSprite()
 	{
-		string main = "PSG"..min(3, (WeaponStatus[PSProp_UpgradePoints] / 3));
+		string main = "PSG"..min(Tiers - 1, (WeaponStatus[PSProp_UpgradePoints] / PointsPerTier));
 		return main..(GetBatteriesLoaded(1) > 0 && Enabled ? "B" : "A").."0", 0.2;
 	}
 	override string GetHelpText()
@@ -74,7 +74,7 @@ class HDPersonalShieldGenerator : HDWeapon
 	}
 	override double WeaponBulk()
 	{
-		return 20 * min(3, (WeaponStatus[PSProp_UpgradePoints] / 3)) + GetBatteriesLoaded() * ENC_BATTERY_LOADED;
+		return 20 + 20 * min(Tiers - 1, (WeaponStatus[PSProp_UpgradePoints] / PointsPerTier)) + GetBatteriesLoaded() * ENC_BATTERY_LOADED;
 	}
 	override void LoadoutConfigure(string input)
 	{
@@ -328,6 +328,8 @@ class HDPersonalShieldGenerator : HDWeapon
 		return String.Format("You picked up a%s %spersonal shield generator%s.", elemStr, regenStr, shkStr);
 	}
 
+	const PointsPerTier = 10;
+	const Tiers = 8;
 	static const string Modes[] = { "([]------):\c[Green] Standard\c-", "(------[]):\c[Red] Overcharged\c-" };
 	bool Enabled;
 
@@ -348,7 +350,7 @@ class HDPersonalShieldGenerator : HDWeapon
 	States
 	{
 		RegisterSprites:
-			PSG0 A 0; PSG1 A 0; PSG2 A 0; PSG3 A 0;
+			PSG0 A 0; PSG1 A 0; PSG2 A 0; PSG3 A 0; PSG4 A 0; PSG5 A 0; PSG6 A 0; PSG7 A 0;
 
 		Spawn:
 			PSG0 A 1

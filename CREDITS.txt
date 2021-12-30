@@ -3,6 +3,7 @@ Code:
 
 Sprites:
 - Conveniently taken from Russian Overkill.
+- Extra shield graphics by PillowBlaster.
 
 Sounds:
 - Conveniently taken from Bullet-Eye.
