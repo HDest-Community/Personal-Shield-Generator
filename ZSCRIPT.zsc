@@ -367,14 +367,15 @@ class HDPersonalShieldGenerator : HDWeapon
 		Spawn:
 			PSG0 A 1
 			{
-				string str = invoker.GetPickupSprite();
-				sprite = GetSpriteIndex(str.Left(4));
-				frame = int(invoker.GetBatteriesLoaded(1) > 0);
-
 				if (!invoker.owner && invoker.Enabled)
 				{
 					invoker.Enabled = false;
+					invoker.Icon = TexMan.CheckForTexture(invoker.GetPickupSprite(), TexMan.Type_Any);
 				}
+
+				string str = invoker.GetPickupSprite();
+				sprite = GetSpriteIndex(str.Left(4));
+				frame = int(invoker.GetBatteriesLoaded(1) > 0 && invoker.Enabled);
 			}
 			Loop;
 		Select:
