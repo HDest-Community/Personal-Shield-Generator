@@ -74,7 +74,7 @@ class HDPersonalShieldGenerator : HDWeapon
 	}
 	override double WeaponBulk()
 	{
-		return 20 + 20 * min(Tiers, (WeaponStatus[PSProp_UpgradePoints] / PointsPerTier)) + GetBatteriesLoaded() * ENC_BATTERY_LOADED;
+		return 20 + 10 * min(Tiers, (WeaponStatus[PSProp_UpgradePoints] / PointsPerTier)) + GetBatteriesLoaded() * ENC_BATTERY_LOADED;
 	}
 	override void LoadoutConfigure(string input)
 	{
