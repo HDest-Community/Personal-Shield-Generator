@@ -671,8 +671,8 @@ class HDPersonalShield : HDMagicShield
 			return;
 		}
 		
-		sb.DrawImage(SGen.GetPickupSprite(), (100, -3), gzflags | sb.DI_ITEM_LEFT_BOTTOM, box: (10, -1));
-		sb.DrawString(sb.pNewSmallFont, sb.FormatNumber(max(0, Amount), 1, 6), (110, -10), gzflags | sb.DI_TEXT_ALIGN_LEFT, Amount > 0 ? (SGen.Enabled ? Font.CR_GREEN : Font.CR_YELLOW) : Font.CR_RED, scale: (0.5, 0.5));
+		sb.DrawImage(SGen.GetPickupSprite(), (100, -3), gzflags | sb.DI_ITEM_LEFT_BOTTOM, box: (20, -1));
+		sb.DrawString(sb.pNewSmallFont, sb.FormatNumber(max(0, Amount), 1, 6), (120, -10), gzflags | sb.DI_TEXT_ALIGN_LEFT, Amount > 0 ? (SGen.Enabled ? Font.CR_GREEN : Font.CR_YELLOW) : Font.CR_RED, scale: (0.5, 0.5));
 		for (int i = 0; i < 3; ++i)
 		{
 			int bat = SGen.WeaponStatus[SGen.PSProp_Battery1 + i];
