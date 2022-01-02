@@ -370,6 +370,11 @@ class HDPersonalShieldGenerator : HDWeapon
 				string str = invoker.GetPickupSprite();
 				sprite = GetSpriteIndex(str.Left(4));
 				frame = int(invoker.GetBatteriesLoaded(1) > 0);
+
+				if (!invoker.owner && invoker.Enabled)
+				{
+					invoker.Enabled = false;
+				}
 			}
 			Loop;
 		Select:
