@@ -314,7 +314,7 @@ class HDPersonalShieldGenerator : HDWeapon
 			pointsRemaining -= toSpend;
 			if (pointsRemaining > 0)
 			{
-				gen.WeaponStatus[PSProp_Degradation] = max(0, gen.WeaponStatus[PSProp_Degradation] - 20 * pointsRemaining);
+				gen.WeaponStatus[PSProp_Degradation] = max(0, gen.WeaponStatus[PSProp_Degradation] - 10 * pointsRemaining);
 			}
 
 			gen.WeaponStatus[PSProp_Flags] |= WeaponStatus[PSProp_Flags];
