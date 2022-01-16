@@ -350,7 +350,6 @@ class HDPersonalShieldGenerator : HDWeapon
 		+INVENTORY.INVBAR
 		+WEAPON.WIMPY_WEAPON
 		-HDWEAPON.DROPTRANSLATION
-		+BRIGHT
 		Inventory.Icon "PSG0A0";
 		Inventory.PickupSound "weapons/pocket";
 		Inventory.PickupMessage "You picked up a personal shield generator.";
