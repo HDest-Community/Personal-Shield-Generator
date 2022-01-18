@@ -477,7 +477,7 @@ class PsgRandom : IdleDummy
 
 				for (int i = 0; i < psg.Tiers * psg.PointsPerTier; ++i)
 				{
-					if (random[psgrand](0, 1))
+					if (random[psgrand](0, 2))
 					{
 						psg.WeaponStatus[psg.PSProp_UpgradePoints] += randompick[psgrand](1, 1, 1, 2, 2, 3);
 					}
