@@ -369,12 +369,12 @@ class HDPersonalShieldGenerator : HDWeapon
 				if (!invoker.owner && invoker.Enabled)
 				{
 					invoker.Enabled = false;
-					invoker.Icon = TexMan.CheckForTexture(invoker.GetPickupSprite(), TexMan.Type_Any);
 				}
 
 				string str = invoker.GetPickupSprite();
 				sprite = GetSpriteIndex(str.Left(4));
 				frame = int(invoker.GetBatteriesLoaded(1) > 0 && invoker.Enabled);
+				invoker.Icon = TexMan.CheckForTexture(str, TexMan.Type_Any);
 			}
 			Loop;
 		Select:
