@@ -131,6 +131,8 @@ class HDPersonalShieldGenerator : HDWeapon
 	{
 		Super.DoEffect();
 
+		Icon = TexMan.CheckForTexture(GetPickupSprite(), TexMan.Type_Any);
+
 		if (!Enabled)
 		{
 			return;
@@ -376,7 +378,6 @@ class HDPersonalShieldGenerator : HDWeapon
 				string str = invoker.GetPickupSprite();
 				sprite = GetSpriteIndex(str.Left(4));
 				frame = int(invoker.GetBatteriesLoaded(1) > 0 && invoker.Enabled);
-				invoker.Icon = TexMan.CheckForTexture(str, TexMan.Type_Any);
 			}
 			Loop;
 		Select:
@@ -432,7 +433,6 @@ class HDPersonalShieldGenerator : HDWeapon
 					HDBattery.SpawnMag(self, "HDBattery", last);
 				}
 				invoker.WeaponStatus[PSProp_Battery1 + count - 1] = -1;
-				invoker.Icon = TexMan.CheckForTexture(invoker.GetPickupSprite(), TexMan.Type_Any);
 			}
 			Goto ReloadEnd;
 		Reload:
@@ -447,7 +447,6 @@ class HDPersonalShieldGenerator : HDWeapon
 				}
 				invoker.WeaponStatus[PSProp_Battery1 + count] = bat.TakeMag(true);
 				A_StartSound("weapons/vulcopen1", 8, CHANF_OVERLAP);
-				invoker.Icon = TexMan.CheckForTexture(invoker.GetPickupSprite(), TexMan.Type_Any);
 			}
 			Goto ReloadEnd;
 		Zoom:
@@ -455,7 +454,6 @@ class HDPersonalShieldGenerator : HDWeapon
 			{
 				invoker.Enabled = !invoker.Enabled;
 				A_StartSound("PSG/Toggle", 9, pitch: invoker.Enabled ? 1.0 : 0.8);
-				invoker.Icon = TexMan.CheckForTexture(invoker.GetPickupSprite(), TexMan.Type_Any);
 			}
 			Goto Nope;
 		ReloadEnd:
