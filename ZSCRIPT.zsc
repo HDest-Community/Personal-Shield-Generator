@@ -116,6 +116,22 @@ class HDPersonalShieldGenerator : HDWeapon
 		return Super.GetSbarNum(flags);
 	}
 
+	clearscope int GetShieldColor()
+	{
+		switch (WeaponStatus[PSProp_UpgradePoints] / PointsPerTier)
+		{
+			default: return 0xFFFFFF;
+			case 0: return 0xFF1111;
+			case 1: return 0xFF8811;
+			case 2: return 0xFFFF11;
+			case 3: return 0x66FF11;
+			case 4: return 0x11FFFF;
+			case 5: return 0x1144FF;
+			case 6: return 0x8811FF;
+			case 7: return 0xFF11FF;
+		}
+	}
+
 	override void AttachToOwner(Actor other)
 	{
 		let shield = HDPersonalShield(other.GiveInventoryType('HDPersonalShield'));
@@ -507,15 +523,7 @@ class HDPersonalShield : HDMagicShield
 		{
 			// [Ace] Where do you think that extra shield goes?
 			owner.DamageMobj(self, self, (Amount - newMax) >> 4, 'Bashing', DMG_NO_ARMOR | DMG_FORCED);
-			Amount = MaxAmount;
-
-			owner.A_StartSound("misc/mobshieldx", CHAN_BODY, CHANF_OVERLAP, 0.75);
-			for (int i = 0; i < 10; ++i)
-			{
-				vector3 rpos = owner.pos + (frandom(-owner.radius, owner.radius), frandom(-owner.radius, owner.radius), frandom(0, owner.height));
-				Actor spk = Spawn("ShieldSpark", rpos, ALLOW_REPLACE);
-				spk.vel = (frandom(-2, 2), frandom(-2, 2), frandom(-2, 2)) + owner.vel;
-			}
+			Deplete(Amount - newMax, newMax);
 		}
 	}
 
@@ -524,6 +532,11 @@ class HDPersonalShield : HDMagicShield
 		if (owner.bCORPSE || owner.Health <= 0)
 		{
 			return;
+		}
+
+		if (SGen)
+		{
+			LastColor = SGen.GetShieldColor();
 		}
 
 		if (!SGen || !SGen.owner)
@@ -537,13 +550,10 @@ class HDPersonalShield : HDMagicShield
 			}
 		}
 
-		if (SGen.GetBatteriesLoaded(1) == 3)
-		{
-			int base, extra;
-			[base, extra] = SGen.GetMaxShield();
-			int newMax = base + extra;
-			ChangeMaxAmount(newMax);
-		}
+		int base, extra;
+		[base, extra] = SGen.GetMaxShield();
+		int newMax = base + extra;
+		ChangeMaxAmount(newMax);
 
 		if (!SGen.Enabled)
 		{
@@ -642,26 +652,220 @@ class HDPersonalShield : HDMagicShield
 		if (Depleted && Amount > 0)
 		{
 			Depleted = false;
-			if (hd_debug)
+			owner.A_StartSound("PSG/ShieldUp", CHAN_BODY, CHANF_OVERLAP, 0.75);
+
+			ShieldShieldlet sp = null;
+
+			double startAlpha = 0;
+			bool shift = false;
+			for (double h = 0; h < owner.height / 1.5; h += HeightIncrease)
 			{
-				Console.Printf(owner.GetClassName().." shield restored!");
-			}
-			owner.A_StartSound("misc/mobshieldf", CHAN_BODY, CHANF_OVERLAP, 0.75);
-			for (int i = 0; i < 10; ++i)
-			{
-				vector3 rpos = owner.pos + (frandom(-owner.radius, owner.radius), frandom(-owner.radius, owner.radius), frandom(0, owner.height));
-				actor spk = actor.Spawn("ShieldSpark", rpos, ALLOW_REPLACE);
-				vector3 sv = spk.Vec3To(owner);
-				sv.z += height / 2;
-				spk.vel = sv * 0.02;
+				for (double a = 0; a < 360; a += AngleIncrease)
+				{
+					vector3 spawnPos = (owner.Vec2Angle(owner.radius * 1.5, a + (shift ? AngleIncrease / 2.0 : 0)), owner.pos.z + owner.height / 2);
+					if (h == 0)
+					{
+						sp = ShieldShieldlet(SpawnSegment('ShieldShieldlet', spawnPos + (0, 0, h)));
+						sp.bREFLECTIVE = true; sp.Alpha = startAlpha; sp.PeakAlpha = 1.0; sp.OutSpeed = frandom(0.10, 0.20);
+					}
+					else
+					{
+						sp = ShieldShieldlet(SpawnSegment('ShieldShieldlet', spawnPos + (0, 0, h)));
+						sp.bREFLECTIVE = true; sp.Alpha = startAlpha; sp.PeakAlpha = 1.0; sp.OutSpeed = frandom(0.10, 0.20);
+						sp = ShieldShieldlet(SpawnSegment('ShieldShieldlet', spawnPos - (0, 0, h)));
+						sp.bREFLECTIVE = true; sp.Alpha = startAlpha; sp.PeakAlpha = 1.0; sp.OutSpeed = frandom(0.10, 0.20);
+					}
+				}
+				startAlpha -= 0.1;
+				shift = !shift;
 			}
 		}
 	}
 
+	override int, Name, int, int, int, int, int HandleDamage(int damage, Name mod, int flags, Actor inflictor, Actor source, int towound, int toburn, int tostun, int tobreak)
+	{
+		if (!owner || (flags & (DMG_NO_FACTOR | DMG_FORCED)) || Amount < 1 || !inflictor || inflictor == owner || inflictor is "HDBulletActor" || mod == 'bleedout' || mod == 'hot' || mod == 'cold' || mod == 'maxhpdrain' || mod == 'internal' || mod == 'holy' || mod == 'jointlock' || mod == 'staples')
+		{
+			return damage, mod, flags, towound, toburn, tostun, tobreak;
+		}
+
+		int blocked = min(Amount >> 1, damage, MaxAmount >> 1);
+		damage -= blocked;
+
+		bool supereffective = (mod == 'BFGBallAttack' || mod=='electrical' || mod=='balefire');
+
+		Deplete(max(1, supereffective ? blocked << 2 : blocked));
+
+		vector3 sparkpos = (0, 0, 0);
+		if (inflictor && inflictor != source)
+		{
+			sparkpos = inflictor.pos;
+		}
+		else if (source)
+		{
+			sparkpos = (owner.pos.xy + owner.radius * (source.pos.xy - owner.pos.xy).unit(), owner.pos.z + min(owner.height, source.height * 0.6));
+		}
+		else
+		{
+			sparkpos = (owner.pos.xy, owner.pos.z + owner.height * 0.6);
+		}
+
+		SpawnImpactWeave(sparkPos);
+
+		if(damage < 1)
+		{
+			if (!(flags & DMG_NO_PAIN) && blocked > (owner.SpawnHealth() >> 3) && random(0, 255) < owner.PainChance)
+			{
+				HDMobBase.ForcePain(owner);
+			}
+		}
+
+		return damage,mod,flags,towound,toburn,tostun,tobreak;
+	}
+
 	override double, double OnBulletImpact(HDBulletActor bullet, double pen, double penshell, double hitangle, double deemedwidth, vector3 hitpos, vector3 vu, bool hitactoristall)
 	{
+		if (!owner || !bullet || Amount < 1)
+		{
+			return pen, penshell;
+		}
+
 		bullet.speed /= SGen.GetThickness();
-		return Super.OnBulletImpact(bullet, pen, penshell, hitangle, deemedwidth, hitpos, vu, hitactoristall);
+
+		double bulletpower = pen * bullet.mass * 0.1;
+		if (bulletpower < 1)
+		{
+			bulletpower = int(frandom(0, 1) < bulletpower);
+		}
+
+		int depleteAmt = int(min(bulletpower, Amount));
+		if (depleteAmt <= 0)
+		{
+			if (bulletpower == 0)
+			{
+				return 0, penshell;
+			}
+			return pen, penshell;
+		}
+
+		Deplete(depleteAmt);
+
+		SpawnImpactWeave(bullet.pos);
+
+		owner.vel += (((owner.pos.xy, owner.pos.z + owner.height * 0.5) - bullet.pos).unit() * depleteAmt / owner.mass);
+		owner.angle += DeltaAngle(owner.angle, owner.AngleTo(bullet)) * frandom(-0.005, 0.03);
+		owner.pitch += frandom(-1.0, 1.0);
+
+		double addpenshell = min(pen, Amount, MaxAmount >> 3);
+		if (addpenshell > 0)
+		{
+			pen -= addpenshell;
+			penshell += addpenshell;
+		}
+		return pen, penshell;
+	}
+
+	void Deplete(int amt, int maxAmt = 0)
+	{
+		Amount -= amt;
+		if (Amount <= maxAmt)
+		{
+			Amount = maxAmt;
+			owner.A_StartSound("PSG/ShieldBreak", CHAN_BODY, CHANF_OVERLAP, 0.75);
+
+			ShieldShieldlet sp = null;
+
+			bool shift = false;
+			for (double h = 0; h < owner.height / 1.5; h += HeightIncrease)
+			{
+				for (double a = 0; a < 360; a += AngleIncrease)
+				{
+					if (random(0, 2))
+					{
+						continue;
+					}
+					vector3 spawnPos = (owner.Vec2Angle(owner.radius * 1.5, a + (shift ? AngleIncrease / 2.0 : 0)), owner.pos.z + owner.height / 2);
+
+					if (h == 0)
+					{
+						sp = ShieldShieldlet(SpawnSegment('ShieldShieldlet', spawnPos));
+						sp.PeakAlpha = 1.0; sp.OutSpeed = frandom(0.03, 0.10); sp.bSTANDSTILL = true; sp.A_ChangeVelocity(min(0, frandom(-0.5, 1.0)), 0, 0, CVF_RELATIVE);
+					}
+					else
+					{
+						sp = ShieldShieldlet(SpawnSegment('ShieldShieldlet', spawnPos + (0, 0, h)));
+						sp.PeakAlpha = 1.0; sp.OutSpeed = frandom(0.03, 0.10); sp.bSTANDSTILL = true; sp.A_ChangeVelocity(min(0, frandom(-0.5, 1.0)), 0, 0, CVF_RELATIVE);
+						sp = ShieldShieldlet(SpawnSegment('ShieldShieldlet', spawnPos - (0, 0, h)));
+						sp.PeakAlpha = 1.0; sp.OutSpeed = frandom(0.03, 0.10); sp.bSTANDSTILL = true; sp.A_ChangeVelocity(min(0, frandom(-0.5, 1.0)), 0, 0, CVF_RELATIVE);
+					}
+				}
+				shift = !shift;
+			}
+		}
+	}
+
+	private void SpawnImpactWeave(vector3 spawnPos)
+	{
+		vector3 diff = level.Vec3Diff(owner.pos, spawnPos);
+		double centerAngle = VectorAngle(diff.x, diff.y);
+
+		// [Ace] I tried to mathematically calculate how to do this, but after two hours I gave up. This isn't something that will change anytime soon, so it doesn't matter anyway.
+		static const double spawnHeights[] =
+		{
+			HeightIncrease * 4,
+			HeightIncrease * 3, HeightIncrease * 3,
+			HeightIncrease * 2, HeightIncrease * 2, HeightIncrease * 2,
+			HeightIncrease, HeightIncrease,
+			0, 0, 0,
+			-HeightIncrease, -HeightIncrease,
+			-HeightIncrease * 2, -HeightIncrease * 2, -HeightIncrease * 2,
+			-HeightIncrease * 3, -HeightIncrease * 3,
+			-HeightIncrease * 4
+		};
+
+		static const double spawnAngles[] =
+		{
+			0,
+			-AngleIncrease / 2, AngleIncrease / 2,
+			-AngleIncrease, 0, AngleIncrease,
+			-AngleIncrease / 2, AngleIncrease / 2,
+			-AngleIncrease, 0, AngleIncrease,
+			-AngleIncrease / 2, AngleIncrease / 2,
+			-AngleIncrease, 0, AngleIncrease,
+			-AngleIncrease / 2, AngleIncrease / 2,
+			0
+		};
+
+		static const double spawnAlphas[] =
+		{
+			-1.0,
+			-1.0, -1.0,
+			-1.0, -0.5, -1.0,
+			-0.5, -0.5,
+			-1.0, 0, -1.0,
+			-0.5, -0.5,
+			-1.0, -0.5, -1.0,
+			-1.0, -1.0,
+			-1.0
+		};
+
+		vector2 randomShift = (frandom(5.0, 5.0), frandom(-4.0, 4.0));
+		for (int i = 0; i < spawnHeights.Size(); ++i)
+		{
+			vector3 hexPos = (owner.Vec2Angle(owner.radius * 1.5, centerAngle + spawnAngles[i] + randomShift.x), spawnPos.z + spawnHeights[i] + randomShift.y);
+			ShieldShieldlet sp = ShieldShieldlet(SpawnSegment('ShieldShieldlet', hexPos));
+			sp.bREFLECTIVE = true; sp.Alpha = spawnAlphas[i]; sp.PeakAlpha = 0.75; sp.InSpeed = 0.5; sp.OutSpeed = 0.20;
+		}
+	}
+
+	private ShieldShieldlet SpawnSegment(class<ShieldShieldlet> type, vector3 spawnPos)
+	{
+		ShieldShieldlet a = ShieldShieldlet(Spawn(type, spawnPos));
+		a.angle = a.AngleTo(owner);
+		//a.pitch = AceCore.PitchTo(a, owner);
+		a.SetShade(LastColor);
+		a.master = owner;
+		return a;
 	}
 
 	override void DrawHUDStuff(HDStatusBar sb, HDPlayerPawn hpl, int hdflags, int gzflags)
@@ -683,8 +887,12 @@ class HDPersonalShield : HDMagicShield
 		}
 	}
 
+	// [Ace] These are calculated to work with the the current sprite scale, size, and distance. If any of these are incorrect, problems will happen.
+	const HeightIncrease = 1.12;
+	const AngleIncrease = 12.0;
 	const RechargeTics = 5;
 	bool Depleted;
+	private int LastColor;
 	private int UnDepleteTimer;
 	private double RechargeFrac;
 	private HDPersonalShieldGenerator SGen;
@@ -695,5 +903,51 @@ class HDPersonalShield : HDMagicShield
 		+INVENTORY.KEEPDEPLETED
 		-INVENTORY.INVBAR
 		HDDamageHandler.Priority 10002; // [Ace] Handle it before the shield from Arcanum.
+	}
+}
+
+class ShieldShieldlet : Actor
+{
+	override void Tick()
+	{
+		// [Ace] I'm pulling a Matt and using unused flags instead of defining my own. Can it backfire? Maybe in a century. Can it backfire realistically? Probably not.
+		if (master && !bSTANDSTILL)
+		{
+			vel = master.vel;
+		}
+		Super.Tick();
+	}
+
+	double InSpeed, OutSpeed, PeakAlpha;
+
+	Default
+	{
+		+NOINTERACTION
+		+NOBLOCKMAP
+		Renderstyle "AddShaded";
+		+WALLSPRITE
+		Alpha 1.0;
+		Scale 0.07;
+	}
+
+	States
+	{
+		Spawn:
+			SLDS S 1 NoDelay
+			{
+				if (bREFLECTIVE)
+				{
+					alpha += InSpeed;
+					if (alpha >= PeakAlpha)
+					{
+						bREFLECTIVE = false;
+					}
+				}
+				else
+				{
+					A_FadeOut(OutSpeed);
+				}
+			}
+			Loop;
 	}
 }

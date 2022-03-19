@@ -1,12 +1,10 @@
-Code:
-- Accensus
-
 Sprites:
 - Conveniently taken from Russian Overkill.
 - Extra shield graphics by PillowBlaster.
 
 Sounds:
 - Conveniently taken from Bullet-Eye.
+- Shield break/restore (The Halo Vaccinator): https://gamebanana.com/sounds/40287
 
 Idea:
 - LSWraith

@@ -4,3 +4,6 @@ $volume PSG/Toggle 0.5
 
 PSG/Upgrade PSGUPGRD
 $volume PSG/Upgrade 0.5
+
+PSG/ShieldUp PSGSLDUP
+PSG/ShieldBreak PSGSLDBR
