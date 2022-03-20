@@ -666,14 +666,14 @@ class HDPersonalShield : HDMagicShield
 					if (h == 0)
 					{
 						sp = ShieldShieldlet(SpawnSegment('ShieldShieldlet', spawnPos + (0, 0, h)));
-						sp.bREFLECTIVE = true; sp.Alpha = startAlpha; sp.PeakAlpha = 1.0; sp.OutSpeed = frandom(0.10, 0.20);
+						sp.bREFLECTIVE = true; sp.Alpha = startAlpha; sp.PeakAlpha = 1.0; sp.InSpeed = 0.20; sp.OutSpeed = frandom(0.10, 0.20);
 					}
 					else
 					{
 						sp = ShieldShieldlet(SpawnSegment('ShieldShieldlet', spawnPos + (0, 0, h)));
-						sp.bREFLECTIVE = true; sp.Alpha = startAlpha; sp.PeakAlpha = 1.0; sp.OutSpeed = frandom(0.10, 0.20);
+						sp.bREFLECTIVE = true; sp.Alpha = startAlpha; sp.PeakAlpha = 1.0; sp.InSpeed = 0.20; sp.OutSpeed = frandom(0.10, 0.20);
 						sp = ShieldShieldlet(SpawnSegment('ShieldShieldlet', spawnPos - (0, 0, h)));
-						sp.bREFLECTIVE = true; sp.Alpha = startAlpha; sp.PeakAlpha = 1.0; sp.OutSpeed = frandom(0.10, 0.20);
+						sp.bREFLECTIVE = true; sp.Alpha = startAlpha; sp.PeakAlpha = 1.0; sp.InSpeed = 0.20; sp.OutSpeed = frandom(0.10, 0.20);
 					}
 				}
 				startAlpha -= 0.1;
