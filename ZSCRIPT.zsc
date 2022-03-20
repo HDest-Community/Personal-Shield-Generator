@@ -759,12 +759,15 @@ class HDPersonalShield : HDMagicShield
 			{
 				Depleted = true;
 				UnDepleteTimer = 35 * 3;
-				// [Ace] For each upgrade, add 3 seconds reactivation delay.
-				for (int i = 0; i < 3; ++i)
+				if (SGen)
 				{
-					if (SGen.WeaponStatus[SGen.PSProp_Flags] & (1 << i))
+					// [Ace] For each upgrade, add 3 seconds reactivation delay.
+					for (int i = 0; i < 3; ++i)
 					{
-						UnDepleteTimer += 35 * 3;
+						if (SGen.WeaponStatus[SGen.PSProp_Flags] & (1 << i))
+						{
+							UnDepleteTimer += 35 * 3;
+						}
 					}
 				}
 			}
