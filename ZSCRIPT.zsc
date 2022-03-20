@@ -138,7 +138,7 @@ class HDPersonalShieldGenerator : HDWeapon
 		if (shield)
 		{
 			shield.Amount = 0;
-			shield.Depleted = true;
+			shield.Depleted = true; // [Ace] Forced up effect to spawn.
 		}
 		Super.AttachToOwner(other);
 	}
@@ -483,7 +483,7 @@ class PsgRandom : IdleDummy
 	States
 	{
 		Spawn:
-			TNT1 A 0 nodelay
+			TNT1 A 0 NoDelay
 			{
 				let psg = HDPersonalShieldGenerator(Spawn("HDPersonalShieldGenerator", pos, ALLOW_REPLACE));
 				if (!psg)
@@ -633,21 +633,6 @@ class HDPersonalShield : HDMagicShield
 				SGen.WeaponStatus[SGen.PSProp_ShieldRegenerated] += SGen.WeaponStatus[SGen.PSProp_Mode] == 1 ? 2 : 1;
 			}
 		}
-		else if (Amount < 0)
-		{
-			UnDepleteTimer = 35 * 3;
-
-			// [Ace] For each upgrade, add 3 seconds reactivation delay.
-			for (int i = 0; i < 3; ++i)
-			{
-				if (SGen.WeaponStatus[SGen.PSProp_Flags] & (1 << i))
-				{
-					UnDepleteTimer += 35 * 3;
-				}
-			}
-			Depleted = true;
-			Amount = 0;
-		}
 
 		if (Depleted && Amount > 0)
 		{
@@ -770,6 +755,19 @@ class HDPersonalShield : HDMagicShield
 		Amount -= amt;
 		if (Amount <= maxAmt)
 		{
+			if (maxAmt == 0)
+			{
+				Depleted = true;
+				UnDepleteTimer = 35 * 3;
+				// [Ace] For each upgrade, add 3 seconds reactivation delay.
+				for (int i = 0; i < 3; ++i)
+				{
+					if (SGen.WeaponStatus[SGen.PSProp_Flags] & (1 << i))
+					{
+						UnDepleteTimer += 35 * 3;
+					}
+				}
+			}
 			Amount = maxAmt;
 			owner.A_StartSound("PSG/ShieldBreak", CHAN_BODY, CHANF_OVERLAP, 0.75);
 
