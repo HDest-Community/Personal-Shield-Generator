@@ -552,11 +552,16 @@ class HDPersonalShield : HDMagicShield
 
 		int base, extra;
 		[base, extra] = SGen.GetMaxShield();
-		int newMax = base + extra;
-		ChangeMaxAmount(newMax);
+		ChangeMaxAmount(base + extra);
 
 		if (!SGen.Enabled)
 		{
+			// [Ace] Passively deplete shields if generator is diabled. Increase rate the fewer charged batteries you have.
+			int batteries = SGen.GetBatteriesLoaded(1);
+			if (!Depleted && level.time % (2 << (batteries + 1)) == 0)
+			{
+				Deplete(1);
+			}
 			return;
 		}
 
