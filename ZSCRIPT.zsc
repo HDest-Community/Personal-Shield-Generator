@@ -149,6 +149,12 @@ class HDPersonalShieldGenerator : HDWeapon
 
 		Icon = TexMan.CheckForTexture(GetPickupSprite(), TexMan.Type_Any);
 
+		// [Ace] Owner is an NPC, assume they're intelligent enough to know how to turn it on.
+		if (!owner.player)
+		{
+			Enabled = true;
+		}
+
 		if (!Enabled)
 		{
 			return;
@@ -566,30 +572,34 @@ class HDPersonalShield : HDMagicShield
 		}
 
 		let plr = HDPlayerPawn(owner);
-		if (plr && Amount > 0)
+		if (owner && Amount > 0)
 		{
 			bool overcharged = SGen.WeaponStatus[SGen.PSProp_Mode] == 1;
 			if (SGen.WeaponStatus[SGen.PSProp_Flags] & SGen.PSF_Elemental)
 			{
-				plr.A_SetInventory('HDFireDouse', max(plr.CountInv('HDFireDouse'), overcharged ? 6 : 3));
+				owner.A_SetInventory('HDFireDouse', max(owner.CountInv('HDFireDouse'), overcharged ? 6 : 3));
 			}
 			if (SGen.WeaponStatus[SGen.PSProp_Flags] & SGen.PSF_Medical)
 			{
 				if (GetAge() % (overcharged ? 20 : 35) == 0)
 				{
-					if (plr.woundcount > 0)
+					if (plr && plr.woundcount > 0)
 					{
 						plr.woundcount--;
 						plr.unstablewoundcount++;
 						Amount -= 5;
 					}
-					if (plr.Health < plr.MaxHealth())
+					if (owner.Health < (plr ? plr.MaxHealth() : owner.GetMaxHealth()))
 					{
-						plr.GiveBody(1);
+						if (HDMobBase(owner))
+						{
+							HDMobBase(owner).BodyDamage--;
+						}
+						owner.GiveBody(1);
 						Amount -= 5;
 					}
 				}
-				if (GetAge() % (overcharged ? 210 : 350) == 0 && plr.burncount > 0)
+				if (plr && GetAge() % (overcharged ? 210 : 350) == 0 && plr.burncount > 0)
 				{
 					plr.burncount--;
 					Amount -= 20;
@@ -597,12 +607,12 @@ class HDPersonalShield : HDMagicShield
 			}
 			if (SGen.WeaponStatus[SGen.PSProp_Flags] & SGen.PSF_Shocking && GetAge() % (overcharged ? 3 : 6) == 0)
 			{
-				BlockThingsIterator it = BlockThingsIterator.Create(plr, plr.radius * 2);
+				BlockThingsIterator it = BlockThingsIterator.Create(owner, owner.radius * 2);
 				while (it.Next())
 				{
-					if (it.thing is 'Babuin' && it.thing.Health > 0 && Babuin(it.thing).latchtarget == plr)
+					if (it.thing is 'Babuin' && it.thing.Health > 0 && Babuin(it.thing).latchtarget == owner)
 					{
-						it.thing.DamageMobj(self, plr, random(1, 20), 'Electrical');
+						it.thing.DamageMobj(self, owner, random(1, 20), 'Electrical');
 						Amount--;
 					}
 				}
@@ -613,9 +623,9 @@ class HDPersonalShield : HDMagicShield
 			}
 		}
 		
-		if (UnDepleteTimer > 0)
+		if (ReactionTime > 0)
 		{
-			UnDepleteTimer--;
+			ReactionTime--;
 		}
 		else if (Amount >= 0 && Amount < MaxAmount)
 		{
@@ -763,7 +773,7 @@ class HDPersonalShield : HDMagicShield
 			if (maxAmt == 0)
 			{
 				Depleted = true;
-				UnDepleteTimer = 35 * 3;
+				ReactionTime = 35 * 3;
 				if (SGen)
 				{
 					// [Ace] For each upgrade, add 3 seconds reactivation delay.
@@ -771,7 +781,7 @@ class HDPersonalShield : HDMagicShield
 					{
 						if (SGen.WeaponStatus[SGen.PSProp_Flags] & (1 << i))
 						{
-							UnDepleteTimer += 35 * 3;
+							ReactionTime += 35 * 3;
 						}
 					}
 				}
@@ -899,7 +909,6 @@ class HDPersonalShield : HDMagicShield
 	const RechargeTics = 5;
 	bool Depleted;
 	private int LastColor;
-	private int UnDepleteTimer;
 	private double RechargeFrac;
 	private HDPersonalShieldGenerator SGen;
 
