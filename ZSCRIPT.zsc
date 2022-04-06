@@ -201,7 +201,7 @@ class HDPersonalShieldGenerator : HDWeapon
 	int, int GetMaxShield() const
 	{
 		int base = WeaponStatus[PSProp_Mode] == 1 ? 1500 : 500;
-		int extra = WeaponStatus[PSProp_Mode] == 1 ? 150 : 50;
+		int extra = WeaponStatus[PSProp_Mode] == 1 ? 300 : 100;
 		return base, extra * WeaponStatus[PSProp_UpgradePoints];
 	}
 
@@ -212,7 +212,7 @@ class HDPersonalShieldGenerator : HDWeapon
 
 	private int, int GetEfficiency() const
 	{
-		return 600, 20 * WeaponStatus[PSProp_UpgradePoints];
+		return 600, 40 * WeaponStatus[PSProp_UpgradePoints];
 	}
 
 	private int GetAdjustedEfficiency(int base, int degradation) const
@@ -365,7 +365,7 @@ class HDPersonalShieldGenerator : HDWeapon
 		return String.Format("You picked up a%s %spersonal shield generator%s.", elemStr, regenStr, shkStr);
 	}
 
-	const PointsPerTier = 10;
+	const PointsPerTier = 5;
 	const Tiers = 7; // [Ace] Actually Tiers + 1 because it's zero-based, so Tier 0 counts as Tier 1.
 	static const string Modes[] = { "([]------):\c[Green] Standard\c-", "(------[]):\c[Red] Overcharged\c-" };
 	bool Enabled;
@@ -499,9 +499,9 @@ class PsgRandom : IdleDummy
 
 				for (int i = 0; i < psg.Tiers * psg.PointsPerTier; ++i)
 				{
-					if (random[psgrand](0, 2))
+					if (random[psgrand](0, 1))
 					{
-						psg.WeaponStatus[psg.PSProp_UpgradePoints] += randompick[psgrand](1, 1, 1, 2, 2, 3);
+						psg.WeaponStatus[psg.PSProp_UpgradePoints] = min(psg.Tiers * psg.PointsPerTier, psg.WeaponStatus[psg.PSProp_UpgradePoints] + randompick[psgrand](1, 1, 1, 1, 2));
 					}
 					else
 					{
