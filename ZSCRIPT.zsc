@@ -574,6 +574,19 @@ class HDPersonalShield : HDMagicShield
 		let plr = HDPlayerPawn(owner);
 		if (owner && Amount > 0)
 		{
+			if (!CoreHandler)
+			{
+				CoreHandler = AceCoreHandler(EventHandler.Find('AceCoreHandler'));
+			}
+
+			InterfaceRequest req = CoreHandler.GetRequest('DepletePsg', self);
+			if (req)
+			{
+				Deplete(req.Arg.ToInt());
+				req.Destroy();
+				return;
+			}
+
 			bool overcharged = SGen.WeaponStatus[SGen.PSProp_Mode] == 1;
 			if (SGen.WeaponStatus[SGen.PSProp_Flags] & SGen.PSF_Elemental)
 			{
@@ -911,6 +924,7 @@ class HDPersonalShield : HDMagicShield
 	private int LastColor;
 	private double RechargeFrac;
 	private HDPersonalShieldGenerator SGen;
+	private AceCoreHandler CoreHandler;
 
 	Default
 	{
