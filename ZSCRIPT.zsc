@@ -80,10 +80,10 @@ class HDPersonalShieldGenerator : HDWeapon
 	override void LoadoutConfigure(string input)
 	{
 		InitializeWepStats(false);
-		int points = GetLoadoutVar(input, "points", 1);
+		int points = GetLoadoutVar(input, "points", 2);
 		if (points > 0)
 		{
-			WeaponStatus[PSProp_UpgradePoints] = points;
+			WeaponStatus[PSProp_UpgradePoints] = clamp(points, 1, Tiers * PointsPerTier);
 		}
 		if (GetLoadoutVar(input, "elem", 1) > 0)
 		{
