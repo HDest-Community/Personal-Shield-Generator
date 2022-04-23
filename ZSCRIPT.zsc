@@ -280,9 +280,9 @@ class HDPersonalShieldGenerator : HDWeapon
 		pos.y += 10;
 
 		// Capacity.
-		int base, extra;
-		[base, extra] = GetMaxShield();
-		str = String.Format("CAP: \c[Teal]%i \c[DarkGray](+%i)\c-", base + extra, extra);
+		int baseShield, extraShield;
+		[baseShield, extraShield] = GetMaxShield();
+		str = String.Format("CAP: \c[Teal]%i \c[DarkGray](+%i)\c-", baseShield + extraShield, extraShield);
 		sb.DrawString(sb.pSmallFont, str, pos + bob, sb.DI_SCREEN_CENTER | sb.DI_TEXT_ALIGN_LEFT, Font.CR_WHITE);
 		pos.y += 10;
 
@@ -291,27 +291,28 @@ class HDPersonalShieldGenerator : HDWeapon
 		pos.y += 10;
 
 		// Efficiency.
-		[base, extra] = GetEfficiency();
-		int adj = GetAdjustedEfficiency(base + extra, WeaponStatus[PSProp_Degradation]);
+		int baseEff, extraEff;
+		[baseEff, extraEff] = GetEfficiency();
+		int adj = GetAdjustedEfficiency(baseEff + extraEff, WeaponStatus[PSProp_Degradation]);
 		string efcol = "\c[Green]";
-		if (adj < base * 0.20)
+		if (adj < baseEff * 0.20)
 		{
 			efcol = "\c[Black]";
 		}
-		else if (adj < base * 0.40)
+		else if (adj < baseEff * 0.40)
 		{
 			efcol = "\c[Red]";
 		}
-		else if (adj < base * 0.60)
+		else if (adj < baseEff * 0.60)
 		{
 			efcol = "\c[Orange]";
 		}
-		else if (adj < base * 0.80)
+		else if (adj < baseEff * 0.80)
 		{
 			efcol = "\c[Yellow]";
 		}
 
-		int relative = adj - (base + extra);
+		int relative = adj - (baseEff + extraEff);
 		str = String.Format("EFF: \c[Teal]%i\c-/%s%i \c[DarkGray](%s%i)\c-", adj - WeaponStatus[PSProp_ShieldRegenerated], efcol, adj, (relative >= 0 ? "+" : ""), relative);
 		sb.DrawString(sb.pSmallFont, str, pos + bob, sb.DI_SCREEN_CENTER | sb.DI_TEXT_ALIGN_LEFT, Font.CR_WHITE);
 		pos.y += 10;
@@ -333,6 +334,12 @@ class HDPersonalShieldGenerator : HDWeapon
 		if (WeaponStatus[PSProp_Flags] & PSF_Shocking)
 		{
 			sb.DrawString(sb.pSmallFont, "SHK: "..hiLoStr, pos + bob, sb.DI_SCREEN_CENTER | sb.DI_TEXT_ALIGN_LEFT, Font.CR_WHITE);
+			pos.y += 10;
+		}
+		if (WeaponStatus[PSProp_Flags] & PSF_Cloaking)
+		{
+			string onOff = Enabled && CountInv('HDPersonalShield') >= (baseShield + extraShield) * CloakPercent ? "\c[Green]ON\c-" : "\c[Red]OFF\c-";
+			sb.DrawString(sb.pSmallFont, "CLK: "..onOff, pos + bob, sb.DI_SCREEN_CENTER | sb.DI_TEXT_ALIGN_LEFT, Font.CR_WHITE);
 			pos.y += 10;
 		}
 
@@ -386,6 +393,7 @@ class HDPersonalShieldGenerator : HDWeapon
 		return String.Format("You picked up a%s %spersonal shield generator%s.", elemStr, regenStr, shkStr);
 	}
 
+	const CloakPercent = 0.75;
 	const PointsPerTier = 5;
 	const Tiers = 7; // [Ace] Actually Tiers + 1 because it's zero-based, so Tier 0 counts as Tier 1.
 	static const string Modes[] = { "([]------):\c[Green] Standard\c-", "(------[]):\c[Red] Overcharged\c-" };
@@ -651,7 +659,7 @@ class HDPersonalShield : HDMagicShield
 			}
 			if (SGen.WeaponStatus[SGen.PSProp_Flags] & SGen.PSF_Cloaking)
 			{
-				if (Amount >= MaxAmount * 0.75)
+				if (Amount >= MaxAmount * SGen.CloakPercent)
 				{
 					IsCloaked = true;
 					owner.A_SetRenderStyle(0.2, STYLE_Translucent);
