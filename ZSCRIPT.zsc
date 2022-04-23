@@ -148,6 +148,22 @@ class HDPersonalShieldGenerator : HDWeapon
 		Super.AttachToOwner(other);
 	}
 
+	override bool Use(bool pickup)
+	{
+		if (!pickup && owner && owner.player.cmd.buttons & BT_USE)
+		{
+			A_ToggleShield();
+			return false;
+		}
+		return Super.Use(pickup);
+	}
+
+	private action void A_ToggleShield()
+	{
+		invoker.Enabled = !invoker.Enabled;
+		invoker.owner.A_StartSound("PSG/Toggle", 9, pitch: invoker.Enabled ? 1.0 : 0.8);
+	}
+
 	override void DoEffect()
 	{
 		Super.DoEffect();
@@ -477,11 +493,7 @@ class HDPersonalShieldGenerator : HDWeapon
 			}
 			Goto ReloadEnd;
 		Zoom:
-			TNT1 A 15
-			{
-				invoker.Enabled = !invoker.Enabled;
-				A_StartSound("PSG/Toggle", 9, pitch: invoker.Enabled ? 1.0 : 0.8);
-			}
+			TNT1 A 15 A_ToggleShield();
 			Goto Nope;
 		ReloadEnd:
 			TNT1 A 6;
