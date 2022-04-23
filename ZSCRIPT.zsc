@@ -36,7 +36,8 @@ class HDPersonalShieldGenerator : HDWeapon
 	{
 		PSF_Elemental = 1,
 		PSF_Medical = 2,
-		PSF_Shocking = 4
+		PSF_Shocking = 4,
+		PSF_Cloaking = 8 // [Ace] Why yes, I like my technology overpowered, how can you tell?
 	}
 
 	enum PSProperties
@@ -95,6 +96,10 @@ class HDPersonalShieldGenerator : HDWeapon
 		if (GetLoadoutVar(input, "shock", 1) > 0)
 		{
 			WeaponStatus[PSProp_Flags] |= PSF_Shocking;
+		}
+		if (GetLoadoutVar(input, "cloak", 1) > 0)
+		{
+			WeaponStatus[PSProp_Flags] |= PSF_Cloaking;
 		}
 	}
 	override void InitializeWepStats(bool idfa)
@@ -556,6 +561,7 @@ class HDPersonalShield : HDMagicShield
 			if (!SGen)
 			{
 				ChangeMaxAmount(0);
+				UnCloak();
 				Destroy();
 				return;
 			}
@@ -573,6 +579,7 @@ class HDPersonalShield : HDMagicShield
 			{
 				Deplete(1);
 			}
+			UnCloak();
 			return;
 		}
 
@@ -635,6 +642,21 @@ class HDPersonalShield : HDMagicShield
 					}
 				}
 			}
+			if (SGen.WeaponStatus[SGen.PSProp_Flags] & SGen.PSF_Cloaking)
+			{
+				if (Amount >= MaxAmount * 0.75)
+				{
+					IsCloaked = true;
+					owner.A_SetRenderStyle(0.2, STYLE_Translucent);
+					owner.bShadow = true;
+					owner.bCantSeek = true;
+				}
+				else
+				{
+					UnCloak();
+				}
+			}
+
 			if (Amount < 0)
 			{
 				Amount = 0;
@@ -904,6 +926,28 @@ class HDPersonalShield : HDMagicShield
 		return a;
 	}
 
+	private void UnCloak()
+	{
+		if (!owner || !IsCloaked)
+		{
+			return;
+		}
+
+		owner.bShadow = false;
+		owner.bCantSeek = false;
+		owner.A_SetRenderStyle(1, STYLE_Normal);
+
+		for (Inventory next = owner.Inv; next != null; next = next.Inv)
+		{
+			if (next is 'PowerInvisibility')
+			{
+				next.DoEffect();
+			}
+		}
+
+		IsCloaked = false;
+	}
+
 	override void DrawHUDStuff(HDStatusBar sb, HDPlayerPawn hpl, int hdflags, int gzflags)
 	{
 		if (hdflags & HDSB_AUTOMAP || !SGen || hpl.InvSel is 'HDPersonalShieldGenerator')
@@ -928,6 +972,7 @@ class HDPersonalShield : HDMagicShield
 	const AngleIncrease = 12.0;
 	const RechargeTics = 5;
 	bool Depleted;
+	private bool IsCloaked;
 	private int LastColor;
 	private double RechargeFrac;
 	private HDPersonalShieldGenerator SGen;

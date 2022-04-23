@@ -10,6 +10,7 @@
 	- `elem`: Shield will help extinguish fire.
 	- `medical`: Shield will help close wounds, regenerate health, and heal burns.
 	- `shock`: Shield will damage latched babuins and eventually kill them.
+	- `cloak`: Bravo six, going dark. Cloaks you if above 75% shield. Side effect is that it hides your sights. Disabling the shield also disables cloaking.
 
 ### Mechanics
 ---
