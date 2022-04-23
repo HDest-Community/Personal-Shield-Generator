@@ -529,7 +529,7 @@ class PsgRandom : IdleDummy
 				HDF.TransferSpecials(self, psg);
 				if (!random[psgrand](0, 5))
 				{
-					psg.WeaponStatus[psg.PSProp_Flags] |= (1 << random[psgrand](0, 2));
+					psg.WeaponStatus[psg.PSProp_Flags] |= (1 << random[psgrand](0, 3));
 				}
 				psg.InitializeWepStats(false);
 			}
