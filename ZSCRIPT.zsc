@@ -527,9 +527,14 @@ class HDPersonalShield : HDMagicShield
 		MaxAmount = newMax;
 		if (Amount > newMax)
 		{
-			// [Ace] Where do you think that extra shield goes?
-			owner.DamageMobj(self, self, (Amount - newMax) >> 4, 'Bashing', DMG_NO_ARMOR | DMG_FORCED);
-			Deplete(Amount - newMax, newMax);
+			// [Ace] Where do you think that extra shield goes? Any trash mobs around you get vaporized if the value is high enough.
+			int diff = Amount - newMax;
+			double dist = HDCONST_ONEMETRE + HDCONST_ONEMETRE * (diff / 4000.0);
+			HDActor.HDBlast(owner, dist, diff >> 4, dist * 0.5);
+			
+			// Console.Printf("rad: %.2f (%.2f), dam %i", dist / 37, dist / 37 * 0.5, diff >> 4);
+			
+			Deplete(diff, newMax);
 		}
 	}
 
@@ -815,17 +820,19 @@ class HDPersonalShield : HDMagicShield
 					}
 					vector3 spawnPos = (owner.Vec2Angle(owner.radius * 1.5, a + (shift ? AngleIncrease / 2.0 : 0)), owner.pos.z + owner.height / 2);
 
+					double speedFac = amt / 4000.0;
+
 					if (h == 0)
 					{
 						sp = ShieldShieldlet(SpawnSegment('ShieldShieldlet', spawnPos));
-						sp.PeakAlpha = 1.0; sp.OutSpeed = frandom(0.03, 0.10); sp.bSTANDSTILL = true; sp.A_ChangeVelocity(min(0, frandom(-0.5, 1.0)), 0, 0, CVF_RELATIVE);
+						sp.PeakAlpha = 1.0; sp.OutSpeed = frandom(0.03, 0.10); sp.bSTANDSTILL = true; sp.A_ChangeVelocity(min(0, frandom(-0.5, 1.0) - speedFac), 0, 0, CVF_RELATIVE);
 					}
 					else
 					{
 						sp = ShieldShieldlet(SpawnSegment('ShieldShieldlet', spawnPos + (0, 0, h)));
-						sp.PeakAlpha = 1.0; sp.OutSpeed = frandom(0.03, 0.10); sp.bSTANDSTILL = true; sp.A_ChangeVelocity(min(0, frandom(-0.5, 1.0)), 0, 0, CVF_RELATIVE);
+						sp.PeakAlpha = 1.0; sp.OutSpeed = frandom(0.03, 0.10); sp.bSTANDSTILL = true; sp.A_ChangeVelocity(min(0, frandom(-0.5, 1.0) - speedFac), 0, 0, CVF_RELATIVE);
 						sp = ShieldShieldlet(SpawnSegment('ShieldShieldlet', spawnPos - (0, 0, h)));
-						sp.PeakAlpha = 1.0; sp.OutSpeed = frandom(0.03, 0.10); sp.bSTANDSTILL = true; sp.A_ChangeVelocity(min(0, frandom(-0.5, 1.0)), 0, 0, CVF_RELATIVE);
+						sp.PeakAlpha = 1.0; sp.OutSpeed = frandom(0.03, 0.10); sp.bSTANDSTILL = true; sp.A_ChangeVelocity(min(0, frandom(-0.5, 1.0) - speedFac), 0, 0, CVF_RELATIVE);
 					}
 				}
 				shift = !shift;

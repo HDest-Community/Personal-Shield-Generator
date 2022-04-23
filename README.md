@@ -14,7 +14,7 @@
 ### Mechanics
 ---
 - The generator needs three batteries to function. Any fewer and the shield will not regenerate.
-- If the shield disappears, be it due to batteries depleting or dropping the generator or switching between modes, the excess shields will crush you and you will take damage depending on the amount of shield.
+- If the maximum shield amount is suddenly lowered to be under the current shield amount, the excess shields will be discharged with great force and deal damage to anything near you. Range and damage grow with difference.
 - Thickness is how good the shield is at stopping bullets. Thicker shields absorb projectile energy better. Only really affects bullets.
 - Efficiency is how many units of shield need to be recharged for all batteries to lose 1 charge. Each cycle reduces efficiency.
 - Recharge rate varies depending on shield amount and mode. It peaks at half capacity and goes down as shield depletes or regenerates.
