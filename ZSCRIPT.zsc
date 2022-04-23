@@ -508,12 +508,7 @@ class PsgRandom : IdleDummy
 		Spawn:
 			TNT1 A 0 NoDelay
 			{
-				let psg = HDPersonalShieldGenerator(Spawn("HDPersonalShieldGenerator", pos, ALLOW_REPLACE));
-				if (!psg)
-				{
-					return;
-				}
-
+				let psg = HDPersonalShieldGenerator(Spawn('HDPersonalShieldGenerator', pos));
 				for (int i = 0; i < psg.Tiers * psg.PointsPerTier; ++i)
 				{
 					if (random[psgrand](0, 1))
