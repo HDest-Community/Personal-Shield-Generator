@@ -822,6 +822,8 @@ class HDPersonalShield : HDMagicShield
 
 	void Deplete(int amt, int maxAmt = 0)
 	{
+		amt = min(Amount, amt);
+
 		Amount -= amt;
 		if (Amount <= maxAmt)
 		{
