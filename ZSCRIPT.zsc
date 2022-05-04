@@ -606,12 +606,21 @@ class HDPersonalShield : HDMagicShield
 				CoreHandler = AceCoreHandler(EventHandler.Find('AceCoreHandler'));
 			}
 
-			InterfaceRequest req = CoreHandler.GetRequest('DepletePsg', self);
-			if (req)
+			for (int i = 0; i < CoreHandler.Requests.Size(); ++i)
 			{
-				Deplete(req.Arg.ToInt());
-				req.Destroy();
-				return;
+				InterfaceRequest req = CoreHandler.Requests[i];
+				if (req.Receiver == self)
+				{
+					switch (req.RequestName)
+					{
+						case 'DepletePsg':
+						{
+							Deplete(req.Arg.ToInt());
+							req.Remove(); i--;
+							break;
+						}
+					}
+				}
 			}
 
 			bool overcharged = SGen.WeaponStatus[SGen.PSProp_Mode] == 1;
