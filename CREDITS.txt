@@ -8,3 +8,4 @@ Sounds:
 
 Idea:
 - LSWraith
+- Fractal Softworks for coming up with the flux idea in the first place. I took it from Starsector.

@@ -37,7 +37,8 @@ class HDPersonalShieldGenerator : HDWeapon
 		PSF_Elemental = 1,
 		PSF_Medical = 2,
 		PSF_Shocking = 4,
-		PSF_Cloaking = 8 // [Ace] Why yes, I like my technology overpowered, how can you tell?
+		PSF_Cloaking = 8, // [Ace] Why yes, I like my technology overpowered, how can you tell?
+		PSF_Overloaded = 16
 	}
 
 	enum PSProperties
@@ -47,7 +48,8 @@ class HDPersonalShieldGenerator : HDWeapon
 		PSProp_Battery1,
 		PSProp_Battery2,
 		PSProp_Battery3,
-		PSProp_ShieldRegenerated,
+		PSProp_Flux,
+		PSProp_HardFlux,
 		PSProp_Degradation,
 		PSProp_Mode,
 		PSProp_UpgradePoints
@@ -109,141 +111,84 @@ class HDPersonalShieldGenerator : HDWeapon
 		WeaponStatus[PSProp_Battery3] = 20;
 	}
 
-	override int GetSbarNum(int flags)
+	override void ActualPickup(Actor other, bool silent)
 	{
-		let HDHud = HDStatusBar(StatusBar);
-		let shield = HDPersonalShield(FindInventory('HDPersonalShield'));
-		if (shield)
+		if (other.player && other.player.ReadyWeapon is 'HDPersonalShieldGenerator' && other.player.cmd.buttons & BT_FIREMODE)
 		{
-			HDHud.SavedColour = shield.Amount > 0 ? (Enabled ? Font.CR_GREEN : Font.CR_YELLOW) : Font.CR_RED;
-			return max(0, shield.Amount);
-		}
-		return Super.GetSbarNum(flags);
-	}
+			if (WeaponStatus[PSProp_Degradation] > 10)
+			{
+				other.A_Log("Shield generator is too damaged to be used for parts.", true);
+				return;	
+			}
+			let gen = HDPersonalShieldGenerator(other.FindInventory('HDPersonalShieldGenerator'));
+			other.A_StartSound("PSG/Upgrade");
+			other.A_Log("Shield generator was stripped for parts.", true);
 
-	clearscope int GetShieldColor()
-	{
-		switch (WeaponStatus[PSProp_UpgradePoints] / PointsPerTier)
-		{
-			default: return 0xFFFFFF;
-			case 0: return 0xFF1111;
-			case 1: return 0xFF8811;
-			case 2: return 0xFFFF11;
-			case 3: return 0x66FF11;
-			case 4: return 0x11FFFF;
-			case 5: return 0x1144FF;
-			case 6: return 0x8811FF;
-			case 7: return 0xFF11FF;
-		}
-	}
+			int pointsRemaining = WeaponStatus[PSProp_UpgradePoints] + 1;
 
-	override void AttachToOwner(Actor other)
-	{
-		let shield = HDPersonalShield(other.GiveInventoryType('HDPersonalShield'));
-		if (shield)
-		{
-			shield.Amount = 0;
-			shield.Depleted = true; // [Ace] Forced up effect to spawn.
+			int toSpend = min(pointsRemaining, Tiers * PointsPerTier - gen.WeaponStatus[PSProp_UpgradePoints]);
+			gen.WeaponStatus[PSProp_UpgradePoints] += toSpend;
+
+			pointsRemaining -= toSpend;
+			if (pointsRemaining > 0)
+			{
+				gen.WeaponStatus[PSProp_Degradation] = max(0, gen.WeaponStatus[PSProp_Degradation] - pointsRemaining);
+			}
+
+			gen.WeaponStatus[PSProp_Flags] |= WeaponStatus[PSProp_Flags];
+			for (int i = PSProp_Battery1; i <= PSProp_Battery3; ++i)
+			{
+				if (WeaponStatus[i] >= 0)
+				{
+					HDMagAmmo.GiveMag(other, 'HDBattery', WeaponStatus[i]);
+				}
+			}
+			Destroy();
+			return;
 		}
-		Super.AttachToOwner(other);
+		Super.ActualPickup(other, silent);
 	}
 
 	override bool Use(bool pickup)
 	{
 		if (!pickup && owner && owner.player.cmd.buttons & BT_USE)
 		{
-			A_ToggleShield();
+			if (ReactionTime <= 0)
+			{
+				A_ToggleShield();
+			}
 			return false;
 		}
 		return Super.Use(pickup);
 	}
 
-	private action void A_ToggleShield()
+	// -----------------------------------------------------------------
+	// UI
+	// -----------------------------------------------------------------
+
+	override int GetSbarNum(int flags)
 	{
-		invoker.Enabled = !invoker.Enabled;
-		invoker.owner.A_StartSound("PSG/Toggle", 9, pitch: invoker.Enabled ? 1.0 : 0.8);
+		HDStatusBar(StatusBar).SavedColour = Enabled ? Font.CR_GREEN : (WeaponStatus[PSProp_Flags] & PSF_Overloaded ? Font.CR_RED : Font.CR_YELLOW);
+		return int((WeaponStatus[PSProp_Flux] / double(GetFluxCapacity())) * 100);
 	}
 
-	override void DoEffect()
+	override int DisplayAmount()
 	{
-		Super.DoEffect();
-
-		Icon = TexMan.CheckForTexture(GetPickupSprite(), TexMan.Type_Any);
-
-		// [Ace] Owner is an NPC, assume they're intelligent enough to know how to turn it on.
-		if (!owner.player)
-		{
-			Enabled = true;
-		}
-
 		if (!Enabled)
 		{
-			return;
+			return actualamount;
 		}
 
-		int base, extra;
-		[base, extra] = GetEfficiency();
-		int adj = GetAdjustedEfficiency(base + extra, WeaponStatus[PSProp_Degradation]);
-		if (WeaponStatus[PSProp_ShieldRegenerated] >= adj)
-		{
-			WeaponStatus[PSProp_ShieldRegenerated] -= adj;
-			if (adj > 0)
-			{
-				WeaponStatus[PSProp_Degradation]++;
-			}
-			for (int i = PSProp_Battery1; i <= PSProp_Battery3; ++i)
-			{
-				if (WeaponStatus[i] > 0)
-				{
-					WeaponStatus[i]--;
-				}
-			}
-		}
-		int batteries = GetBatteriesLoaded(1);
-		if (batteries < 3)
-		{
-			Enabled = false;
-		}
+		HDStatusBar(StatusBar).SavedColour = Font.CR_RED;
+		return int((WeaponStatus[PSProp_HardFlux] / double(GetFluxCapacity())) * 100);
 	}
 
-	clearscope int GetBatteriesLoaded(int minCharge = 0)
+	override string PickupMessage()
 	{
-		int num = 0;
-		for (int i = PSProp_Battery1; i <= PSProp_Battery3; ++i)
-		{
-			if (WeaponStatus[i] >= minCharge)
-			{
-				num++;
-			}
-		}
-		return num;
-	}
-
-	int, int GetMaxShield() const
-	{
-		int base = WeaponStatus[PSProp_Mode] == 1 ? 1500 : 500;
-		int extra = WeaponStatus[PSProp_Mode] == 1 ? 300 : 100;
-		return base, extra * WeaponStatus[PSProp_UpgradePoints];
-	}
-
-	double GetThickness() const
-	{
-		return WeaponStatus[PSProp_Mode] == 1 ? 3.5 : 1.5;
-	}
-
-	private int, int GetEfficiency() const
-	{
-		return 600, 40 * WeaponStatus[PSProp_UpgradePoints];
-	}
-
-	private int GetAdjustedEfficiency(int base, int degradation) const
-	{
-		return max(0, base - 5 * degradation);
-	}
-
-	double, double GetRechargeRate() const
-	{
-		return WeaponStatus[PSProp_Mode] == 1 ? 1 : 3;
+		string elemStr = WeaponStatus[PSProp_Flags] & PSF_Elemental ? "n elementally protective" : "";
+		string regenStr = WeaponStatus[PSProp_Flags] & PSF_Medical ? "medical " : "";
+		string shkStr = WeaponStatus[PSProp_Flags] & PSF_Shocking ? " with a shocking field" : "";
+		return String.Format("You picked up a%s %spersonal shield generator%s.", elemStr, regenStr, shkStr);
 	}
 
 	override void DrawHUDStuff(HDStatusBar sb, HDWeapon hdw, HDPlayerPawn hpl)
@@ -272,73 +217,63 @@ class HDPersonalShieldGenerator : HDWeapon
 		int fontHeight = sb.pSmallFont.mFont.GetHeight() / 2;
 		vector2 pos = (23, -18 - fontHeight);
 
-		string hiLoStr = WeaponStatus[PSProp_Mode] == 1 ? "\c[Green]High\c-" : "\c[Red]Low\c-";
-
-		// Mode.
-		string str = String.Format("MOD "..Modes[WeaponStatus[PSProp_Mode]]);
+		// Arc angle.
+		string str = String.Format("ARC "..ArcDegrees[WeaponStatus[PSProp_Mode]]);
 		sb.DrawString(sb.pSmallFont, str, pos + bob, sb.DI_SCREEN_CENTER | sb.DI_TEXT_ALIGN_LEFT, Font.CR_GOLD);
 		pos.y += 10;
 
 		// Capacity.
-		int baseShield, extraShield;
-		[baseShield, extraShield] = GetMaxShield();
-		str = String.Format("CAP: \c[Teal]%i \c[DarkGray](+%i)\c-", baseShield + extraShield, extraShield);
+		int fluxCap = GetFluxCapacity();
+		str = String.Format("CAP: \c[Green]%i\c-/\c[Green]%i\c-/\c[Cyan]%i\c- \c[DarkGray](+%i)\c-", WeaponStatus[PSProp_Flux], WeaponStatus[PSProp_HardFlux], fluxCap, BaseFluxCap - fluxCap);
 		sb.DrawString(sb.pSmallFont, str, pos + bob, sb.DI_SCREEN_CENTER | sb.DI_TEXT_ALIGN_LEFT, Font.CR_WHITE);
 		pos.y += 10;
 
-		// Thickness.
-		sb.DrawString(sb.pSmallFont, "THK: "..hiLoStr, pos + bob, sb.DI_SCREEN_CENTER | sb.DI_TEXT_ALIGN_LEFT, Font.CR_WHITE);
-		pos.y += 10;
-
-		// Efficiency.
-		int baseEff, extraEff;
-		[baseEff, extraEff] = GetEfficiency();
-		int adj = GetAdjustedEfficiency(baseEff + extraEff, WeaponStatus[PSProp_Degradation]);
-		string efcol = "\c[Green]";
-		if (adj < baseEff * 0.20)
+		// Flux dissipation.
+		double baseRate = GetFluxDissipationRate(true);
+		double adjRate = GetFluxDissipationRate();
+		string col = "\c[Green]";
+		if (adjRate < baseRate * 0.20)
 		{
-			efcol = "\c[Black]";
+			col = "\c[Black]";
 		}
-		else if (adj < baseEff * 0.40)
+		else if (adjRate < baseRate * 0.40)
 		{
-			efcol = "\c[Red]";
+			col = "\c[Red]";
 		}
-		else if (adj < baseEff * 0.60)
+		else if (adjRate < baseRate * 0.60)
 		{
-			efcol = "\c[Orange]";
+			col = "\c[Orange]";
 		}
-		else if (adj < baseEff * 0.80)
+		else if (adjRate < baseRate * 0.80)
 		{
-			efcol = "\c[Yellow]";
+			col = "\c[Yellow]";
 		}
 
-		int relative = adj - (baseEff + extraEff);
-		str = String.Format("EFF: \c[Teal]%i\c-/%s%i \c[DarkGray](%s%i)\c-", adj - WeaponStatus[PSProp_ShieldRegenerated], efcol, adj, (relative >= 0 ? "+" : ""), relative);
+		double relative = adjRate - baseRate;
+		str = String.Format("DSR: %s%.2f \c[DarkGray](%s%.2f)\c-", col, adjRate, (relative >= 0 ? "+" : ""), relative);
 		sb.DrawString(sb.pSmallFont, str, pos + bob, sb.DI_SCREEN_CENTER | sb.DI_TEXT_ALIGN_LEFT, Font.CR_WHITE);
 		pos.y += 10;
 
-		// Recharge rate.
-		sb.DrawString(sb.pSmallFont, "RCH: "..hiLoStr, pos + bob, sb.DI_SCREEN_CENTER | sb.DI_TEXT_ALIGN_LEFT, Font.CR_WHITE);
-		pos.y += 10;
+		string onOffStr = WeaponStatus[PSProp_Mode] == 1 ? "\c[Green]ON\c-" : "\c[Red]OFF\c-";
 
 		if (WeaponStatus[PSProp_Flags] & PSF_Elemental)
 		{
-			sb.DrawString(sb.pSmallFont, "ENV: "..hiLoStr, pos + bob, sb.DI_SCREEN_CENTER | sb.DI_TEXT_ALIGN_LEFT, Font.CR_WHITE);
+			sb.DrawString(sb.pSmallFont, "ENV: "..onOffStr, pos + bob, sb.DI_SCREEN_CENTER | sb.DI_TEXT_ALIGN_LEFT, Font.CR_WHITE);
 			pos.y += 10;
 		}
 		if (WeaponStatus[PSProp_Flags] & PSF_Medical)
 		{
-			sb.DrawString(sb.pSmallFont, "MED: "..hiLoStr, pos + bob, sb.DI_SCREEN_CENTER | sb.DI_TEXT_ALIGN_LEFT, Font.CR_WHITE);
+			sb.DrawString(sb.pSmallFont, "MED: "..onOffStr, pos + bob, sb.DI_SCREEN_CENTER | sb.DI_TEXT_ALIGN_LEFT, Font.CR_WHITE);
 			pos.y += 10;
 		}
 		if (WeaponStatus[PSProp_Flags] & PSF_Shocking)
 		{
-			sb.DrawString(sb.pSmallFont, "SHK: "..hiLoStr, pos + bob, sb.DI_SCREEN_CENTER | sb.DI_TEXT_ALIGN_LEFT, Font.CR_WHITE);
+			sb.DrawString(sb.pSmallFont, "SHK: "..onOffStr, pos + bob, sb.DI_SCREEN_CENTER | sb.DI_TEXT_ALIGN_LEFT, Font.CR_WHITE);
 			pos.y += 10;
 		}
 		if (WeaponStatus[PSProp_Flags] & PSF_Cloaking)
 		{
-			string onOff = Enabled && CountInv('HDPersonalShield') >= (baseShield + extraShield) * CloakPercent ? "\c[Green]ON\c-" : "\c[Red]OFF\c-";
+			string onOff = Enabled && CanCloak() ? "\c[Green]ON\c-" : "\c[Red]OFF\c-";
 			sb.DrawString(sb.pSmallFont, "CLK: "..onOff, pos + bob, sb.DI_SCREEN_CENTER | sb.DI_TEXT_ALIGN_LEFT, Font.CR_WHITE);
 			pos.y += 10;
 		}
@@ -347,57 +282,287 @@ class HDPersonalShieldGenerator : HDWeapon
 		sb.DrawString(sb.pSmallFont, Enabled ? "\c[Green]Enabled\c-" : "\c[Red]Disabled\c-", pos + bob, sb.DI_SCREEN_CENTER | sb.DI_TEXT_ALIGN_LEFT);
 	}
 
-	override void ActualPickup(Actor other, bool silent)
+	// -----------------------------------------------------------------
+	// TICKER
+	// -----------------------------------------------------------------
+
+	override void Tick()
 	{
-		if (other.player && other.player.ReadyWeapon is 'HDPersonalShieldGenerator' && other.player.cmd.buttons & BT_FIREMODE)
+		Super.Tick();
+
+		Icon = TexMan.CheckForTexture(GetPickupSprite(), TexMan.Type_Any);
+		ReactionTime--;
+
+		// [Ace] Owner is an NPC, assume they're intelligent enough to know how to turn it on.
+		if (owner && !owner.player)
 		{
-			if (WeaponStatus[PSProp_Degradation] > 120)
+			Enabled = true;
+		}
+
+		if (WeaponStatus[PSProp_Flags] & PSF_Overloaded)
+		{
+			if (WeaponStatus[PSProp_Flux] == 0)
 			{
-				other.A_Log("Shield generator is too damaged to be used for parts.", true);
-				return;	
+				WeaponStatus[PSProp_Flags] &= ~PSF_Overloaded;
 			}
-			let gen = HDPersonalShieldGenerator(other.FindInventory('HDPersonalShieldGenerator'));
-			other.A_StartSound("PSG/Upgrade");
-			other.A_Log("Shield generator was stripped for parts.", true);
-
-			int pointsRemaining = WeaponStatus[PSProp_UpgradePoints] + 1;
-
-			int toSpend = min(pointsRemaining, Tiers * PointsPerTier - gen.WeaponStatus[PSProp_UpgradePoints]);
-			gen.WeaponStatus[PSProp_UpgradePoints] += toSpend;
-
-			pointsRemaining -= toSpend;
-			if (pointsRemaining > 0)
+			else
 			{
-				gen.WeaponStatus[PSProp_Degradation] = max(0, gen.WeaponStatus[PSProp_Degradation] - 10 * pointsRemaining);
+				Enabled = false;
 			}
+		}
 
-			gen.WeaponStatus[PSProp_Flags] |= WeaponStatus[PSProp_Flags];
-			for (int i = PSProp_Battery1; i <= PSProp_Battery3; ++i)
+		// [Ace] Flux dissipation.
+		if (WeaponStatus[PSProp_Flux] > WeaponStatus[PSProp_HardFlux])
+		{
+			DissipationFrac += GetFluxDissipationRate();
+			if (DissipationFrac >= 1.0)
 			{
-				if (WeaponStatus[i] >= 0)
+				int toDissipate = int(DissipationFrac);
+				WeaponStatus[PSProp_Flux] = max(WeaponStatus[PSProp_HardFlux], WeaponStatus[PSProp_Flux] - toDissipate);
+				DissipationFrac %= floor(DissipationFrac);
+
+				if (!Enabled)
 				{
-					HDMagAmmo.GiveMag(other, 'HDBattery', WeaponStatus[i]);
+					WeaponStatus[PSProp_HardFlux] = max(0, WeaponStatus[PSProp_HardFlux] - toDissipate);
 				}
 			}
-			Destroy();
+		}
+
+		if (!Enabled)
+		{
 			return;
 		}
-		Super.ActualPickup(other, silent);
+		
+		int batteries = GetBatteriesLoaded(1);
+		if (batteries < 3)
+		{
+			Enabled = false;
+		}
+
+		if (!CoreHandler)
+		{
+			CoreHandler = AceCoreHandler(EventHandler.Find('AceCoreHandler'));
+		}
+
+		for (int i = 0; i < CoreHandler.Requests.Size(); ++i)
+		{
+			// InterfaceRequest req = CoreHandler.Requests[i];
+			// if (req.Receiver == self)
+			// {
+			// 	switch (req.RequestName)
+			// 	{
+			// 		case 'DepletePsg':
+			// 		{
+			// 			Deplete(req.Arg.ToInt());
+			// 			req.Remove(); i--;
+			// 			break;
+			// 		}
+			// 	}
+			// }
+		}
+
+		if (!owner)
+		{
+			return;
+		}
+
+		let plr = HDPlayerPawn(owner);
+
+		if (WeaponStatus[PSProp_Flags] & PSF_Elemental)
+		{
+			owner.A_SetInventory('HDFireDouse', max(owner.CountInv('HDFireDouse'), 4));
+		}
+		if (WeaponStatus[PSProp_Flags] & PSF_Medical)
+		{
+			if (GetAge() % 25 == 0)
+			{
+				if (plr && plr.woundcount > 0)
+				{
+					plr.woundcount--;
+					plr.unstablewoundcount++;
+					BuildUpFlux(10, 1);
+				}
+				if (owner.Health < (plr ? plr.MaxHealth() : owner.GetMaxHealth()))
+				{
+					if (HDMobBase(owner))
+					{
+						HDMobBase(owner).BodyDamage--;
+					}
+					owner.GiveBody(1);
+					BuildUpFlux(10, 1);
+				}
+			}
+			if (plr && GetAge() % 280 == 0 && plr.burncount > 0)
+			{
+				plr.burncount--;
+				BuildUpFlux(20, 2);
+			}
+		}
+		if (WeaponStatus[PSProp_Flags] & PSF_Shocking && GetAge() % 5 == 0)
+		{
+			BlockThingsIterator it = BlockThingsIterator.Create(owner, owner.radius * 2);
+			while (it.Next())
+			{
+				if (it.thing is 'Babuin' && it.thing.Health > 0 && Babuin(it.thing).latchtarget == owner)
+				{
+					it.thing.DamageMobj(self, owner, random(1, 20), 'Electrical');
+					BuildUpFlux(1);
+				}
+			}
+		}
+		if (WeaponStatus[PSProp_Flags] & PSF_Cloaking)
+		{
+			if (CanCloak())
+			{
+				IsCloaked = true;
+				owner.A_SetRenderStyle(0.2, STYLE_Translucent);
+				owner.bSHADOW = true;
+				owner.bCANTSEEK = true;
+				BuildUpFlux(1);
+			}
+			else
+			{
+				UnCloak();
+			}
+		}
 	}
 
-	override string PickupMessage()
+	// -----------------------------------------------------------------
+	// ACTIONS
+	// -----------------------------------------------------------------
+
+	private action void A_ToggleShield()
 	{
-		string elemStr = WeaponStatus[PSProp_Flags] & PSF_Elemental ? "n elementally protective" : "";
-		string regenStr = WeaponStatus[PSProp_Flags] & PSF_Medical ? "medical " : "";
-		string shkStr = WeaponStatus[PSProp_Flags] & PSF_Shocking ? " with a shocking field" : "";
-		return String.Format("You picked up a%s %spersonal shield generator%s.", elemStr, regenStr, shkStr);
+		if (!(invoker.WeaponStatus[PSProp_Flags] & PSF_Overloaded))
+		{
+			invoker.Enabled = !invoker.Enabled;
+			if (invoker.Enabled)
+			{
+				invoker.owner.GiveInventoryType('HDPersonalShield');
+			}
+		}
+		invoker.owner.A_StartSound("PSG/Toggle", 9, pitch: invoker.Enabled ? 1.0 : 0.8);
+		invoker.ReactionTime = 35;
 	}
 
-	const CloakPercent = 0.75;
+	private void UnCloak()
+	{
+		if (!owner || !IsCloaked)
+		{
+			return;
+		}
+
+		owner.bSHADOW = false;
+		owner.bCANTSEEK = false;
+		owner.A_SetRenderStyle(1, STYLE_Normal);
+
+		for (Inventory next = owner.Inv; next != null; next = next.Inv)
+		{
+			if (next is 'PowerInvisibility')
+			{
+				next.DoEffect();
+			}
+		}
+
+		IsCloaked = false;
+	}
+
+	void BuildUpFlux(int amt, int hardAmt = 0)
+	{
+		Actor ptr = owner ? owner : Actor(self);
+
+		WeaponStatus[PSProp_Flux] += amt;
+		WeaponStatus[PSProp_HardFlux] += hardAmt;
+
+		WeaponStatus[PSProp_Flux] = max(WeaponStatus[PSProp_HardFlux], WeaponStatus[PSProp_Flux]);
+
+		if (!(WeaponStatus[PSProp_Flags] & PSF_Overloaded) && WeaponStatus[PSProp_Flux] >= GetFluxCapacity())
+		{
+			WeaponStatus[PSProp_Flags] |= PSF_Overloaded;
+			WeaponStatus[PSProp_Degradation]++;
+			for (int i = PSProp_Battery1; i <= PSProp_Battery3; ++i)
+			{
+				WeaponStatus[i] -= random(4, 8);
+				if (WeaponStatus[i] <= -1)
+				{
+					WeaponStatus[i] = -1;
+					ptr.A_StartSound("weapons/plascrack", 11);
+					ptr.A_StartSound("weapons/plascrack", 12);
+					ptr.A_StartSound("world/tbfar", 14);
+				}
+			}
+			ptr.A_GiveInventory('Heat', 300);
+		}
+	}
+
+	// -----------------------------------------------------------------
+	// INFORMATION
+	// -----------------------------------------------------------------
+
+	clearscope int GetShieldColor()
+	{
+		switch (WeaponStatus[PSProp_UpgradePoints] / PointsPerTier)
+		{
+			default: return 0xFFFFFF;
+			case 0: return 0xFF1111;
+			case 1: return 0xFF8811;
+			case 2: return 0xFFFF11;
+			case 3: return 0x66FF11;
+			case 4: return 0x11FFFF;
+			case 5: return 0x1144FF;
+			case 6: return 0x8811FF;
+			case 7: return 0xFF11FF;
+		}
+	}
+
+	clearscope int GetBatteriesLoaded(int minCharge = 0)
+	{
+		int num = 0;
+		for (int i = PSProp_Battery1; i <= PSProp_Battery3; ++i)
+		{
+			if (WeaponStatus[i] >= minCharge)
+			{
+				num++;
+			}
+		}
+		return num;
+	}
+
+	clearscope int GetFluxCapacity() const
+	{
+		return BaseFluxCap + 500 * WeaponStatus[PSProp_UpgradePoints];
+	}
+
+	clearscope double GetFluxDissipationRate(bool raw = false) const
+	{
+		double base = 1.0 + 0.1 * WeaponStatus[PSProp_UpgradePoints];
+		if (raw)
+		{
+			return base;
+		}
+
+		double minBatteryFac = ((WeaponStatus[PSProp_Battery1] + WeaponStatus[PSProp_Battery2] + WeaponStatus[PSProp_Battery3]) / 3.0) / 10.0;
+		return max(0.05, base * minBatteryFac - 0.05 * WeaponStatus[PSProp_Degradation]);
+	}
+
+	clearscope bool CanCloak() const
+	{
+		return WeaponStatus[PSProp_Flux] < GetFluxCapacity() * 0.25;
+	}
+
+	clearscope int GetShieldArc() const
+	{
+		return WeaponStatus[PSProp_Mode] == 1 ? 120 : 360;
+	}
+
+	const BaseFluxCap = 2000;
 	const PointsPerTier = 5;
 	const Tiers = 7; // [Ace] Actually Tiers + 1 because it's zero-based, so Tier 0 counts as Tier 1.
-	static const string Modes[] = { "([]------):\c[Green] Standard\c-", "(------[]):\c[Red] Overcharged\c-" };
+	static const string ArcDegrees[] = { "([]------):\c[Green] 360 deg\c-", "(------[]):\c[Red] 120 deg\c-" };
 	bool Enabled;
+	private double DissipationFrac;
+	private bool IsCloaked;
+	private AceCoreHandler CoreHandler;
 
 	Default
 	{
@@ -501,7 +666,7 @@ class HDPersonalShieldGenerator : HDWeapon
 			}
 			Goto ReloadEnd;
 		Zoom:
-			TNT1 A 15 A_ToggleShield();
+			TNT1 A 35 A_ToggleShield();
 			Goto Nope;
 		ReloadEnd:
 			TNT1 A 6;
@@ -540,34 +705,75 @@ class PsgRandom : IdleDummy
 	}
 }
 
-class HDPersonalShield : HDMagicShield
+class HDPersonalShield : HDDamageHandler
 {
-	void ChangeMaxAmount(int newMax)
+	// -----------------------------------------------------------------
+	// DAMAGE HANDLING
+	// -----------------------------------------------------------------
+
+	override int, Name, int, int, int, int, int HandleDamage(int damage, Name mod, int flags, Actor inflictor, Actor source, int towound, int toburn, int tostun, int tobreak)
 	{
-		MaxAmount = newMax;
-		if (Amount > newMax)
+		if (!owner || (flags & (DMG_NO_FACTOR | DMG_FORCED)) || !inflictor || inflictor == owner || inflictor is "HDBulletActor" || mod == 'bleedout' || mod == 'hot' || mod == 'cold' || mod == 'maxhpdrain' || mod == 'internal' || mod == 'holy' || mod == 'jointlock' || mod == 'staples')
 		{
-			// [Ace] Where do you think that extra shield goes? Any trash mobs around you get vaporized if the value is high enough.
-			int diff = Amount - newMax;
-			double dist = HDCONST_ONEMETRE + HDCONST_ONEMETRE * (diff / 4000.0);
-			HDActor.HDBlast(owner, dist, diff >> 4, dist * 0.5);
-			
-			// Console.Printf("rad: %.2f (%.2f), dam %i", dist / 37, dist / 37 * 0.5, diff >> 4);
-			
-			Deplete(diff, newMax);
+			return damage, mod, flags, towound, toburn, tostun, tobreak;
 		}
+
+		if (AbsAngle(owner.angle, owner.AngleTo(inflictor)) > SGen.GetShieldArc() / 2.0)
+		{
+			return damage, mod, flags, towound, toburn, tostun, tobreak;
+		}
+
+		double reductionFac = ShieldArc / 360.0;
+		int blocked = max(1, int(damage * reductionFac));
+
+		bool supereffective = (mod == 'BFGBallAttack' || mod == 'electrical' || mod == 'balefire');
+		SGen.BuildUpFlux(blocked, int(blocked * (supereffective ? 0.75 : 0.25)));
+
+		SpawnImpactWeave(inflictor.pos);
+
+		return 0, mod, flags, towound, toburn, tostun, tobreak;
 	}
+
+	override double, double OnBulletImpact(HDBulletActor bullet, double pen, double penshell, double hitangle, double deemedwidth, vector3 hitpos, vector3 vu, bool hitactoristall)
+	{
+		if (!owner || !bullet || AbsAngle(owner.angle, owner.AngleTo(bullet)) > SGen.GetShieldArc() / 2.0)
+		{
+			return pen, penshell;
+		}
+
+		bullet.speed = 0;
+
+		double bulletpower = pen * bullet.mass * 0.2;
+		if (bulletpower < 1)
+		{
+			bulletpower = int(frandom(0, 1) < bulletpower);
+		}
+
+		double reductionFac = ShieldArc / 360.0;
+		int fluxAmt = max(1, int(bulletpower * reductionFac));
+
+		SGen.BuildUpFlux(fluxAmt, int(fluxAmt * 0.25));
+		SpawnImpactWeave(bullet.pos);
+
+		return 0, 0;
+	}
+
+	// -----------------------------------------------------------------
+	// TICKER
+	// -----------------------------------------------------------------
 
 	override void DoEffect()
 	{
-		if (owner.bCORPSE || owner.Health <= 0)
-		{
-			return;
-		}
-
 		if (SGen)
 		{
-			LastColor = SGen.GetShieldColor();
+			ShieldColor = SGen.GetShieldColor();
+
+			int LastArc = ShieldArc;
+			ShieldArc = SGen.GetShieldArc();
+			if (LastArc != ShieldArc)
+			{
+				ShieldUp(ShieldArc);
+			}
 		}
 
 		if (!SGen || !SGen.owner)
@@ -575,321 +781,101 @@ class HDPersonalShield : HDMagicShield
 			SGen = HDPersonalShieldGenerator(owner.FindInventory('HDPersonalShieldGenerator'));
 			if (!SGen)
 			{
-				ChangeMaxAmount(0);
-				UnCloak();
+				ShieldDown(ShieldArc);
 				Destroy();
 				return;
 			}
 		}
 
-		int base, extra;
-		[base, extra] = SGen.GetMaxShield();
-		ChangeMaxAmount(base + extra);
-
 		if (!SGen.Enabled)
 		{
-			// [Ace] Passively deplete shields if generator is diabled. Increase rate the fewer charged batteries you have.
-			int batteries = SGen.GetBatteriesLoaded(1);
-			if (!Depleted && level.time % (2 << (batteries + 1)) == 0)
-			{
-				Deplete(1);
-			}
-			UnCloak();
+			ShieldDown(ShieldArc);
+			Destroy();
 			return;
 		}
 
-		let plr = HDPlayerPawn(owner);
-		if (owner && Amount > 0)
+		ShieldletCount = 0;
+
+		Super.DoEffect();
+	}
+
+	// -----------------------------------------------------------------
+	// ACTIONS
+	// -----------------------------------------------------------------
+
+	private void ShieldDown(int arc)
+	{
+		owner.A_StartSound("PSG/ShieldBreak", CHAN_BODY, CHANF_OVERLAP, 0.75);
+
+		ShieldShieldlet sp = null;
+
+		bool shift = false;
+		for (double h = 0; h <= owner.height / 1.5; h += HeightIncrease)
 		{
-			if (!CoreHandler)
+			for (double a = 0; a < arc; a += AngleIncrease)
 			{
-				CoreHandler = AceCoreHandler(EventHandler.Find('AceCoreHandler'));
-			}
+				if (random(0, 2))
+				{
+					continue;
+				}
 
-			for (int i = 0; i < CoreHandler.Requests.Size(); ++i)
-			{
-				InterfaceRequest req = CoreHandler.Requests[i];
-				if (req.Receiver == self)
+				vector3 spawnPos = (owner.Vec2Angle(owner.radius * 1.5, owner.angle + (a - arc / 2.0 + AngleIncrease / M_PI) + (shift ? AngleIncrease / 2.0 : 0)), owner.pos.z + owner.height / 2);
+				if (h == 0)
 				{
-					switch (req.RequestName)
-					{
-						case 'DepletePsg':
-						{
-							Deplete(req.Arg.ToInt());
-							req.Remove(); i--;
-							break;
-						}
-					}
-				}
-			}
-
-			bool overcharged = SGen.WeaponStatus[SGen.PSProp_Mode] == 1;
-			if (SGen.WeaponStatus[SGen.PSProp_Flags] & SGen.PSF_Elemental)
-			{
-				owner.A_SetInventory('HDFireDouse', max(owner.CountInv('HDFireDouse'), overcharged ? 6 : 3));
-			}
-			if (SGen.WeaponStatus[SGen.PSProp_Flags] & SGen.PSF_Medical)
-			{
-				if (GetAge() % (overcharged ? 20 : 35) == 0)
-				{
-					if (plr && plr.woundcount > 0)
-					{
-						plr.woundcount--;
-						plr.unstablewoundcount++;
-						Amount -= 5;
-					}
-					if (owner.Health < (plr ? plr.MaxHealth() : owner.GetMaxHealth()))
-					{
-						if (HDMobBase(owner))
-						{
-							HDMobBase(owner).BodyDamage--;
-						}
-						owner.GiveBody(1);
-						Amount -= 5;
-					}
-				}
-				if (plr && GetAge() % (overcharged ? 210 : 350) == 0 && plr.burncount > 0)
-				{
-					plr.burncount--;
-					Amount -= 20;
-				}
-			}
-			if (SGen.WeaponStatus[SGen.PSProp_Flags] & SGen.PSF_Shocking && GetAge() % (overcharged ? 3 : 6) == 0)
-			{
-				BlockThingsIterator it = BlockThingsIterator.Create(owner, owner.radius * 2);
-				while (it.Next())
-				{
-					if (it.thing is 'Babuin' && it.thing.Health > 0 && Babuin(it.thing).latchtarget == owner)
-					{
-						it.thing.DamageMobj(self, owner, random(1, 20), 'Electrical');
-						Amount--;
-					}
-				}
-			}
-			if (SGen.WeaponStatus[SGen.PSProp_Flags] & SGen.PSF_Cloaking)
-			{
-				if (Amount >= MaxAmount * SGen.CloakPercent)
-				{
-					IsCloaked = true;
-					owner.A_SetRenderStyle(0.2, STYLE_Translucent);
-					owner.bShadow = true;
-					owner.bCantSeek = true;
+					sp = ShieldShieldlet(SpawnSegment('ShieldShieldlet', spawnPos));
+					sp.PeakAlpha = 1.0; sp.OutSpeed = frandom(0.03, 0.10); sp.bSTANDSTILL = true; sp.A_ChangeVelocity(min(0, frandom(-0.5, 1.0)), 0, 0, CVF_RELATIVE);
 				}
 				else
 				{
-					UnCloak();
+					sp = ShieldShieldlet(SpawnSegment('ShieldShieldlet', spawnPos + (0, 0, h)));
+					sp.PeakAlpha = 1.0; sp.OutSpeed = frandom(0.03, 0.10); sp.bSTANDSTILL = true; sp.A_ChangeVelocity(min(0, frandom(-0.5, 1.0)), 0, 0, CVF_RELATIVE);
+					sp = ShieldShieldlet(SpawnSegment('ShieldShieldlet', spawnPos - (0, 0, h)));
+					sp.PeakAlpha = 1.0; sp.OutSpeed = frandom(0.03, 0.10); sp.bSTANDSTILL = true; sp.A_ChangeVelocity(min(0, frandom(-0.5, 1.0)), 0, 0, CVF_RELATIVE);
 				}
 			}
-
-			if (Amount < 0)
-			{
-				Amount = 0;
-			}
-		}
-		
-		if (ReactionTime > 0)
-		{
-			ReactionTime--;
-		}
-		else if (Amount >= 0 && Amount < MaxAmount)
-		{
-			double rate = SGen.GetRechargeRate();
-			// https://www.desmos.com/calculator/bnngtfuad4
-
-			double div = 2;
-			if (SGen.WeaponStatus[SGen.PSProp_Mode] == 1)
-			{
-				div = 1.43;
-			} 
-			double fac = 1.0 - (sin(Amount / (MaxAmount / 2.0) * 90.0) / div);
-
-			double adj = rate * fac;
-			RechargeFrac++;
-			while (RechargeFrac >= adj && Amount < MaxAmount)
-			{
-				RechargeFrac -= adj;
-				Amount = min(Amount + 1, MaxAmount);
-				SGen.WeaponStatus[SGen.PSProp_ShieldRegenerated] += SGen.WeaponStatus[SGen.PSProp_Mode] == 1 ? 2 : 1;
-			}
-		}
-
-		if (Depleted && Amount > 0)
-		{
-			Depleted = false;
-			owner.A_StartSound("PSG/ShieldUp", CHAN_BODY, CHANF_OVERLAP, 0.75);
-
-			ShieldShieldlet sp = null;
-
-			double startAlpha = 0;
-			bool shift = false;
-			for (double h = 0; h < owner.height / 1.5; h += HeightIncrease)
-			{
-				for (double a = 0; a < 360; a += AngleIncrease)
-				{
-					vector3 spawnPos = (owner.Vec2Angle(owner.radius * 1.5, a + (shift ? AngleIncrease / 2.0 : 0)), owner.pos.z + owner.height / 2);
-					if (h == 0)
-					{
-						sp = ShieldShieldlet(SpawnSegment('ShieldShieldlet', spawnPos + (0, 0, h)));
-						sp.bREFLECTIVE = true; sp.Alpha = startAlpha; sp.PeakAlpha = 1.0; sp.InSpeed = 0.20; sp.OutSpeed = frandom(0.10, 0.20);
-					}
-					else
-					{
-						sp = ShieldShieldlet(SpawnSegment('ShieldShieldlet', spawnPos + (0, 0, h)));
-						sp.bREFLECTIVE = true; sp.Alpha = startAlpha; sp.PeakAlpha = 1.0; sp.InSpeed = 0.20; sp.OutSpeed = frandom(0.10, 0.20);
-						sp = ShieldShieldlet(SpawnSegment('ShieldShieldlet', spawnPos - (0, 0, h)));
-						sp.bREFLECTIVE = true; sp.Alpha = startAlpha; sp.PeakAlpha = 1.0; sp.InSpeed = 0.20; sp.OutSpeed = frandom(0.10, 0.20);
-					}
-				}
-				startAlpha -= 0.1;
-				shift = !shift;
-			}
+			shift = !shift;
 		}
 	}
 
-	override int, Name, int, int, int, int, int HandleDamage(int damage, Name mod, int flags, Actor inflictor, Actor source, int towound, int toburn, int tostun, int tobreak)
+	void ShieldUp(int arc)
 	{
-		if (!owner || (flags & (DMG_NO_FACTOR | DMG_FORCED)) || Amount < 1 || !inflictor || inflictor == owner || inflictor is "HDBulletActor" || mod == 'bleedout' || mod == 'hot' || mod == 'cold' || mod == 'maxhpdrain' || mod == 'internal' || mod == 'holy' || mod == 'jointlock' || mod == 'staples')
+		owner.A_StartSound("PSG/ShieldUp", CHAN_BODY, CHANF_OVERLAP, 0.75);
+
+		ShieldShieldlet sp = null;
+
+		double startAlpha = 0;
+		bool shift = false;
+
+		for (double h = 0; h < owner.height / 1.5; h += HeightIncrease)
 		{
-			return damage, mod, flags, towound, toburn, tostun, tobreak;
-		}
-
-		int blocked = min(Amount >> 1, damage, MaxAmount >> 1);
-		damage -= blocked;
-
-		bool supereffective = (mod == 'BFGBallAttack' || mod=='electrical' || mod=='balefire');
-
-		Deplete(max(1, supereffective ? blocked << 2 : blocked));
-
-		vector3 sparkpos = (0, 0, 0);
-		if (inflictor && inflictor != source)
-		{
-			sparkpos = inflictor.pos;
-		}
-		else if (source)
-		{
-			sparkpos = (owner.pos.xy + owner.radius * (source.pos.xy - owner.pos.xy).unit(), owner.pos.z + min(owner.height, source.height * 0.6));
-		}
-		else
-		{
-			sparkpos = (owner.pos.xy, owner.pos.z + owner.height * 0.6);
-		}
-
-		SpawnImpactWeave(sparkPos);
-
-		if(damage < 1)
-		{
-			if (!(flags & DMG_NO_PAIN) && blocked > (owner.SpawnHealth() >> 3) && random(0, 255) < owner.PainChance)
+			for (double a = 0; a < arc; a += AngleIncrease)
 			{
-				HDMobBase.ForcePain(owner);
-			}
-		}
-
-		return damage,mod,flags,towound,toburn,tostun,tobreak;
-	}
-
-	override double, double OnBulletImpact(HDBulletActor bullet, double pen, double penshell, double hitangle, double deemedwidth, vector3 hitpos, vector3 vu, bool hitactoristall)
-	{
-		if (!owner || !bullet || Amount < 1)
-		{
-			return pen, penshell;
-		}
-
-		bullet.speed /= SGen.GetThickness();
-
-		double bulletpower = pen * bullet.mass * 0.1;
-		if (bulletpower < 1)
-		{
-			bulletpower = int(frandom(0, 1) < bulletpower);
-		}
-
-		int depleteAmt = int(min(bulletpower, Amount));
-		if (depleteAmt <= 0)
-		{
-			if (bulletpower == 0)
-			{
-				return 0, penshell;
-			}
-			return pen, penshell;
-		}
-
-		Deplete(depleteAmt);
-
-		SpawnImpactWeave(bullet.pos);
-
-		owner.vel += (((owner.pos.xy, owner.pos.z + owner.height * 0.5) - bullet.pos).unit() * depleteAmt / owner.mass);
-		owner.angle += DeltaAngle(owner.angle, owner.AngleTo(bullet)) * frandom(-0.005, 0.03);
-		owner.pitch += frandom(-1.0, 1.0);
-
-		double addpenshell = min(pen, Amount, MaxAmount >> 3);
-		if (addpenshell > 0)
-		{
-			pen -= addpenshell;
-			penshell += addpenshell;
-		}
-		return pen, penshell;
-	}
-
-	void Deplete(int amt, int maxAmt = 0)
-	{
-		amt = min(Amount, amt);
-
-		Amount -= amt;
-		if (Amount <= maxAmt)
-		{
-			if (maxAmt == 0)
-			{
-				Depleted = true;
-				ReactionTime = 35 * 3;
-				if (SGen)
+				vector3 spawnPos = (owner.Vec2Angle(owner.radius * 1.5, owner.angle + (a - arc / 2.0 + AngleIncrease / M_PI) + (shift ? AngleIncrease / 2.0 : 0)), owner.pos.z + owner.height / 2);
+				if (h == 0)
 				{
-					// [Ace] For each upgrade, add 3 seconds reactivation delay.
-					for (int i = 0; i < 3; ++i)
-					{
-						if (SGen.WeaponStatus[SGen.PSProp_Flags] & (1 << i))
-						{
-							ReactionTime += 35 * 3;
-						}
-					}
+					sp = ShieldShieldlet(SpawnSegment('ShieldShieldlet', spawnPos));
+					sp.bREFLECTIVE = true; sp.Alpha = startAlpha; sp.PeakAlpha = 1.0; sp.InSpeed = 0.20; sp.OutSpeed = frandom(0.10, 0.20);
+				}
+				else
+				{
+					sp = ShieldShieldlet(SpawnSegment('ShieldShieldlet', spawnPos + (0, 0, h)));
+					sp.bREFLECTIVE = true; sp.Alpha = startAlpha; sp.PeakAlpha = 1.0; sp.InSpeed = 0.20; sp.OutSpeed = frandom(0.10, 0.20);
+					sp = ShieldShieldlet(SpawnSegment('ShieldShieldlet', spawnPos - (0, 0, h)));
+					sp.bREFLECTIVE = true; sp.Alpha = startAlpha; sp.PeakAlpha = 1.0; sp.InSpeed = 0.20; sp.OutSpeed = frandom(0.10, 0.20);
 				}
 			}
-			Amount = maxAmt;
-			owner.A_StartSound("PSG/ShieldBreak", CHAN_BODY, CHANF_OVERLAP, 0.75);
-
-			ShieldShieldlet sp = null;
-
-			bool shift = false;
-			for (double h = 0; h < owner.height / 1.5; h += HeightIncrease)
-			{
-				for (double a = 0; a < 360; a += AngleIncrease)
-				{
-					if (random(0, 2))
-					{
-						continue;
-					}
-					vector3 spawnPos = (owner.Vec2Angle(owner.radius * 1.5, a + (shift ? AngleIncrease / 2.0 : 0)), owner.pos.z + owner.height / 2);
-
-					double speedFac = amt / 4000.0;
-
-					if (h == 0)
-					{
-						sp = ShieldShieldlet(SpawnSegment('ShieldShieldlet', spawnPos));
-						sp.PeakAlpha = 1.0; sp.OutSpeed = frandom(0.03, 0.10); sp.bSTANDSTILL = true; sp.A_ChangeVelocity(min(0, frandom(-0.5, 1.0) - speedFac), 0, 0, CVF_RELATIVE);
-					}
-					else
-					{
-						sp = ShieldShieldlet(SpawnSegment('ShieldShieldlet', spawnPos + (0, 0, h)));
-						sp.PeakAlpha = 1.0; sp.OutSpeed = frandom(0.03, 0.10); sp.bSTANDSTILL = true; sp.A_ChangeVelocity(min(0, frandom(-0.5, 1.0) - speedFac), 0, 0, CVF_RELATIVE);
-						sp = ShieldShieldlet(SpawnSegment('ShieldShieldlet', spawnPos - (0, 0, h)));
-						sp.PeakAlpha = 1.0; sp.OutSpeed = frandom(0.03, 0.10); sp.bSTANDSTILL = true; sp.A_ChangeVelocity(min(0, frandom(-0.5, 1.0) - speedFac), 0, 0, CVF_RELATIVE);
-					}
-				}
-				shift = !shift;
-			}
+			startAlpha -= 0.1;
+			shift = !shift;
 		}
 	}
 
 	private void SpawnImpactWeave(vector3 spawnPos)
 	{
+		if (ShieldletCount > 40)
+		{
+			return;
+		}
+
 		vector3 diff = level.Vec3Diff(owner.pos, spawnPos);
 		double centerAngle = VectorAngle(diff.x, diff.y);
 
@@ -940,38 +926,16 @@ class HDPersonalShield : HDMagicShield
 			ShieldShieldlet sp = ShieldShieldlet(SpawnSegment('ShieldShieldlet', hexPos));
 			sp.bREFLECTIVE = true; sp.Alpha = spawnAlphas[i]; sp.PeakAlpha = 0.75; sp.InSpeed = 0.5; sp.OutSpeed = 0.20;
 		}
+		ShieldletCount++;
 	}
 
 	private ShieldShieldlet SpawnSegment(class<ShieldShieldlet> type, vector3 spawnPos)
 	{
 		ShieldShieldlet a = ShieldShieldlet(Spawn(type, spawnPos));
 		a.angle = a.AngleTo(owner);
-		//a.pitch = AceCore.PitchTo(a, owner);
-		a.SetShade(LastColor);
+		a.SetShade(ShieldColor);
 		a.master = owner;
 		return a;
-	}
-
-	private void UnCloak()
-	{
-		if (!owner || !IsCloaked)
-		{
-			return;
-		}
-
-		owner.bShadow = false;
-		owner.bCantSeek = false;
-		owner.A_SetRenderStyle(1, STYLE_Normal);
-
-		for (Inventory next = owner.Inv; next != null; next = next.Inv)
-		{
-			if (next is 'PowerInvisibility')
-			{
-				next.DoEffect();
-			}
-		}
-
-		IsCloaked = false;
 	}
 
 	override void DrawHUDStuff(HDStatusBar sb, HDPlayerPawn hpl, int hdflags, int gzflags)
@@ -982,7 +946,15 @@ class HDPersonalShield : HDMagicShield
 		}
 		
 		sb.DrawImage(SGen.GetPickupSprite(), (100, -3), gzflags | sb.DI_ITEM_LEFT_BOTTOM, box: (20, -1));
-		sb.DrawString(sb.pNewSmallFont, sb.FormatNumber(max(0, Amount), 1, 6), (120, -10), gzflags | sb.DI_TEXT_ALIGN_LEFT, Amount > 0 ? (SGen.Enabled ? Font.CR_GREEN : Font.CR_YELLOW) : Font.CR_RED, scale: (0.5, 0.5));
+
+		double fluxCap = SGen.GetFluxCapacity();
+
+		int fluxPerc = int(ceil((SGen.WeaponStatus[SGen.PSProp_Flux] / fluxCap) * 100));
+		int hardFluxPerc = int(ceil((SGen.WeaponStatus[SGen.PSProp_HardFlux] / fluxCap) * 100));
+
+		int col = SGen.Enabled ? Font.CR_GREEN : (SGen.WeaponStatus[SGen.PSProp_Flags] & SGen.PSF_Overloaded ? Font.CR_RED : Font.CR_YELLOW);
+		sb.DrawString(sb.pNewSmallFont, String.Format("\c[Green]%i\c-%%/\c[Red]%i\c-%%", fluxPerc, hardFluxPerc), (120, -10), gzflags | sb.DI_TEXT_ALIGN_LEFT, Font.CR_DARKGRAY, scale: (0.5, 0.5));
+
 		for (int i = 0; i < 3; ++i)
 		{
 			int bat = SGen.WeaponStatus[SGen.PSProp_Battery1 + i];
@@ -996,17 +968,15 @@ class HDPersonalShield : HDMagicShield
 	// [Ace] These are calculated to work with the the current sprite scale, size, and distance. If any of these are incorrect, problems will happen.
 	const HeightIncrease = 1.12;
 	const AngleIncrease = 12.0;
-	const RechargeTics = 5;
-	bool Depleted;
-	private bool IsCloaked;
-	private int LastColor;
-	private double RechargeFrac;
+	private bool IsShieldUp;
+	private int ShieldColor;
+	private int ShieldArc;
+	private int ShieldletCount;
 	private HDPersonalShieldGenerator SGen;
-	private AceCoreHandler CoreHandler;
 
 	Default
 	{
-		Inventory.MaxAmount 500;
+		Inventory.MaxAmount 1;
 		+INVENTORY.KEEPDEPLETED
 		-INVENTORY.INVBAR
 		HDDamageHandler.Priority 10002; // [Ace] Handle it before the shield from Arcanum.

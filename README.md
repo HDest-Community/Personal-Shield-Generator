@@ -10,15 +10,18 @@
 	- `elem`: Shield will help extinguish fire.
 	- `medical`: Shield will help close wounds, regenerate health, and heal burns.
 	- `shock`: Shield will damage latched babuins and eventually kill them.
-	- `cloak`: Bravo six, going dark. Cloaks you if above 75% shield. Side effect is that it hides your sights. Disabling the shield also disables cloaking.
+	- `cloak`: Bravo six, going dark. Cloaks you if below 25% flux. Side effect is that it hides your sights. Disabling the shield also disables cloaking.
 - Use + Use Item can be used to quickly toggle the shield on and off without having to bring up the interface.
 
 ### Mechanics
 ---
-- The generator needs three batteries to function. Any fewer and the shield will not regenerate. In fact, having fewer than 3 batteries or disabling the shield will make it discharge slowly.
-- If the maximum shield amount is suddenly lowered to be under the current shield amount, the excess shields will be discharged with great force and deal damage to anything near you. Range and damage grow with difference.
-- Thickness is how good the shield is at stopping bullets. Thicker shields absorb projectile energy better. Only really affects bullets.
-- Efficiency is how many units of shield need to be recharged for all batteries to lose 1 charge. Each cycle reduces overall efficiency.
-- Recharge rate varies depending on shield amount and mode. It peaks at half capacity and goes down as shield depletes or regenerates.
+- The generator needs three batteries with 1 charge in them to function.
+- Taking damage generates soft flux. A fraction of that is hard flux. The latter cannot be vented without disabling the shield. Soft flux cannot go under the hard flux amount.
+- Taking *too much* damage will overload the shield, causing the following effects:
+	- Battery charge will be partially depleted. This may result in battery loss if the initial charge was low to begin with.
+	- Disable the generator and prevent reactivation until all flux is vented.
+	- Set you on fire a little.
+- The generator has two modes: full-coverage and frontal. The former makes you virtually impervious to attacks, but shields will take 100% damage, meaning faster flux build-up. Frontal shield makes you open to flanking, but damage to shields is greatly reduced.
+- Shields block all damage completely.
 - Multiple shield generators do not stack due to interference.
 - Hold Firemode with your PSG selected when picking up another generator to consume the item and gain upgrade points. This is a passive bonus.
