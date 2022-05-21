@@ -931,6 +931,11 @@ class HDPersonalShield : HDDamageHandler
 			sp.bREFLECTIVE = true; sp.Alpha = spawnAlphas[i]; sp.PeakAlpha = 0.75; sp.InSpeed = 0.5; sp.OutSpeed = 0.20;
 		}
 		ShieldletCount++;
+
+		if (ShieldletCount < 3)
+		{
+			owner.A_StartSound("PSG/ShieldBlock", 15, CHANF_OVERLAP);
+		}
 	}
 
 	private ShieldShieldlet SpawnSegment(class<ShieldShieldlet> type, vector3 spawnPos)

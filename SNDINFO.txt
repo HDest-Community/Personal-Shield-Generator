@@ -7,3 +7,6 @@ $volume PSG/Upgrade 0.5
 
 PSG/ShieldUp PSGSLDUP
 PSG/ShieldBreak PSGSLDBR
+
+PSG/ShieldBlock PSGBLOCK
+$pitchset PSG/ShieldBlock 0.70 0.85
