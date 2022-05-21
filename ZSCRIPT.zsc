@@ -208,7 +208,7 @@ class HDPersonalShieldGenerator : HDWeapon
 
 		// Capacity.
 		int fluxCap = GetFluxCapacity();
-		str = String.Format("CAP: \c[Green]%i\c-/\c[Green]%i\c-/\c[Cyan]%i\c- \c[DarkGray](+%i)\c-", WeaponStatus[PSProp_Flux], WeaponStatus[PSProp_HardFlux], fluxCap, BaseFluxCap - fluxCap);
+		str = String.Format("CAP: \c[Green]%i\c-/\c[Green]%i\c-/\c[Cyan]%i\c- \c[DarkGray](+%i)\c-", WeaponStatus[PSProp_Flux], WeaponStatus[PSProp_HardFlux], fluxCap, fluxCap - BaseFluxCap);
 		sb.DrawString(sb.pSmallFont, str, pos + bob, sb.DI_SCREEN_CENTER | sb.DI_TEXT_ALIGN_LEFT, Font.CR_WHITE);
 		pos.y += 10;
 
