@@ -364,7 +364,7 @@ class HDPersonalShieldGenerator : HDWeapon
 		}
 		
 		int batteries = GetBatteriesLoaded(1);
-		if (batteries < 3)
+		if (batteries < 1)
 		{
 			Enabled = false;
 		}
@@ -495,7 +495,7 @@ class HDPersonalShieldGenerator : HDWeapon
 			WeaponStatus[PSProp_Degradation]++;
 			for (int i = PSProp_Battery1; i <= PSProp_Battery3; ++i)
 			{
-				WeaponStatus[i] -= random(4, 8);
+				WeaponStatus[i] -= random(6, 12);
 				if (WeaponStatus[i] <= -1)
 				{
 					WeaponStatus[i] = -1;

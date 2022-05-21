@@ -15,7 +15,7 @@
 
 ### Mechanics
 ---
-- The generator needs three batteries with 1 charge in them to function.
+- The generator needs at least one battery with 1 charge in it.
 - Taking damage generates soft flux. A fraction of that is hard flux. The latter cannot be vented without disabling the shield. Soft flux cannot go under the hard flux amount.
 - Taking *too much* damage will overload the shield, causing the following effects:
 	- Battery charge will be partially depleted. This may result in battery loss if the initial charge was low to begin with.
