@@ -163,6 +163,12 @@ class HDPersonalShieldGenerator : HDWeapon
 	// UI
 	// -----------------------------------------------------------------
 
+	override int GetSbarNum(int flags)
+	{
+		HDStatusBar(StatusBar).SavedColour = Enabled ? Font.CR_GREEN : (WeaponStatus[PSProp_Flags] & PSF_Overloaded ? Font.CR_RED : Font.CR_YELLOW);
+		return int((WeaponStatus[PSProp_Flux] / double(GetFluxCapacity())) * 100);
+	}
+
 	override string PickupMessage()
 	{
 		string elemStr = WeaponStatus[PSProp_Flags] & PSF_Elemental ? "n elementally protective" : "";
