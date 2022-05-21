@@ -238,7 +238,7 @@ class HDPersonalShieldGenerator : HDWeapon
 		sb.DrawString(sb.pSmallFont, str, pos + bob, sb.DI_SCREEN_CENTER | sb.DI_TEXT_ALIGN_LEFT, Font.CR_WHITE);
 		pos.y += 10;
 
-		string onOffStr = WeaponStatus[PSProp_Mode] == 1 ? "\c[Green]ON\c-" : "\c[Red]OFF\c-";
+		string onOffStr = Enabled ? "\c[Green]ON\c-" : "\c[Red]OFF\c-";
 
 		if (WeaponStatus[PSProp_Flags] & PSF_Elemental)
 		{
