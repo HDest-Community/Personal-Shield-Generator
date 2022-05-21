@@ -317,14 +317,15 @@ class HDPersonalShieldGenerator : HDWeapon
 			DissipationFrac += GetFluxDissipationRate();
 			if (DissipationFrac >= 1.0)
 			{
-				int toDissipate = int(DissipationFrac);
-				WeaponStatus[PSProp_Flux] = max(WeaponStatus[PSProp_HardFlux], WeaponStatus[PSProp_Flux] - toDissipate);
-				DissipationFrac %= floor(DissipationFrac);
-
+				int toVentSoft = int(DissipationFrac);
+				int toVentHard = 0;
 				if (!Enabled)
 				{
-					WeaponStatus[PSProp_HardFlux] = max(0, WeaponStatus[PSProp_HardFlux] - toDissipate);
+					toVentHard = toVentSoft;
 				}
+
+				DissipationFrac %= floor(DissipationFrac);
+				VentFlux(toVentSoft, toVentHard);
 			}
 		}
 
@@ -346,19 +347,25 @@ class HDPersonalShieldGenerator : HDWeapon
 
 		for (int i = 0; i < CoreHandler.Requests.Size(); ++i)
 		{
-			// InterfaceRequest req = CoreHandler.Requests[i];
-			// if (req.Receiver == self)
-			// {
-			// 	switch (req.RequestName)
-			// 	{
-			// 		case 'DepletePsg':
-			// 		{
-			// 			Deplete(req.Arg.ToInt());
-			// 			req.Remove(); i--;
-			// 			break;
-			// 		}
-			// 	}
-			// }
+			InterfaceRequest req = CoreHandler.Requests[i];
+			if (req.Receiver == self)
+			{
+				switch (req.RequestName)
+				{
+					case 'OverloadPsg':
+					{
+						BuildUpFlux(GetFluxCapacity(), GetFluxCapacity());
+						req.Remove(); i--;
+						break;
+					}
+					case 'VentFlux':
+					{
+						VentFlux(GetFluxCapacity(), GetFluxCapacity());
+						req.Remove(); i--;
+						break;
+					}
+				}
+			}
 		}
 
 		if (!owner)
@@ -493,6 +500,12 @@ class HDPersonalShieldGenerator : HDWeapon
 			}
 			ptr.A_GiveInventory('Heat', 300);
 		}
+	}
+
+	void VentFlux(int amt, int hardAmt = 0)
+	{
+		WeaponStatus[PSProp_HardFlux] = max(0, WeaponStatus[PSProp_HardFlux] - hardAmt);
+		WeaponStatus[PSProp_Flux] = max(WeaponStatus[PSProp_HardFlux], WeaponStatus[PSProp_Flux] - amt);
 	}
 
 	// -----------------------------------------------------------------
