@@ -320,22 +320,18 @@ class HDPersonalShieldGenerator : HDWeapon
 			}
 		}
 
-		// [Ace] Flux dissipation.
-		if (WeaponStatus[PSProp_Flux] > WeaponStatus[PSProp_HardFlux])
+		DissipationFrac += GetFluxDissipationRate();
+		if (DissipationFrac >= 1.0)
 		{
-			DissipationFrac += GetFluxDissipationRate();
-			if (DissipationFrac >= 1.0)
+			int toVentSoft = int(DissipationFrac);
+			int toVentHard = 0;
+			if (!Enabled)
 			{
-				int toVentSoft = int(DissipationFrac);
-				int toVentHard = 0;
-				if (!Enabled)
-				{
-					toVentHard = toVentSoft;
-				}
-
-				DissipationFrac %= floor(DissipationFrac);
-				VentFlux(toVentSoft, toVentHard);
+				toVentHard = toVentSoft;
 			}
+
+			DissipationFrac %= floor(DissipationFrac);
+			VentFlux(toVentSoft, toVentHard);
 		}
 
 		if (!Enabled)
@@ -534,7 +530,7 @@ class HDPersonalShieldGenerator : HDWeapon
 
 	clearscope double GetFluxDissipationRate(bool raw = false) const
 	{
-		double base = 2.0 + 0.20 * WeaponStatus[PSProp_UpgradePoints];
+		double base = 1.0 + 0.10 * WeaponStatus[PSProp_UpgradePoints];
 		if (raw)
 		{
 			return base;
