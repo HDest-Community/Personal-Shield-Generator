@@ -560,7 +560,7 @@ class HDPersonalShieldGenerator : HDWeapon
 			return base;
 		}
 
-		double minBatteryFac = ((WeaponStatus[PSProp_Battery1] + WeaponStatus[PSProp_Battery2] + WeaponStatus[PSProp_Battery3]) / 3.0) / 15.0;
+		double minBatteryFac = ((WeaponStatus[PSProp_Battery1] + WeaponStatus[PSProp_Battery2] + WeaponStatus[PSProp_Battery3]) / 3.0) / 20.0;
 		return max(0.05, base * minBatteryFac * (Enabled ? 0.7 : 1.0) - 0.20 * WeaponStatus[PSProp_Degradation]);
 	}
 
