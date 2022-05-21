@@ -951,8 +951,8 @@ class HDPersonalShield : HDDamageHandler
 		
 		sb.DrawImage(SGen.GetPickupSprite(), (100, -3), gzflags | sb.DI_ITEM_LEFT_BOTTOM, box: (20, -1));
 
-		string colSoft = SGen.Enabled ? (SGen.WeaponStatus[SGen.PSProp_Flags] & SGen.PSF_Overloaded ? "\c[DarkRed]" : "\c[DarkGreen]") : "\c[Yellow]";
-		string colHard = SGen.Enabled ? (SGen.WeaponStatus[SGen.PSProp_Flags] & SGen.PSF_Overloaded ? "\c[Red]" : "\c[Green]") : "\c[Gold]";
+		string colSoft = SGen.Enabled ? "\c[DarkGreen]" : (SGen.WeaponStatus[SGen.PSProp_Flags] & SGen.PSF_Overloaded ? "\c[DarkRed]" : "\c[Yellow]");
+		string colHard = SGen.Enabled ? "\c[Green]" : (SGen.WeaponStatus[SGen.PSProp_Flags] & SGen.PSF_Overloaded ? "\c[Red]" : "\c[Gold]");
 		sb.DrawString(sb.pNewSmallFont,
 			String.Format("%s%i\c-/%s%i\c-/\c[Cyan]%i\c-", colSoft, SGen.WeaponStatus[SGen.PSProp_Flux], colHard, SGen.WeaponStatus[SGen.PSProp_HardFlux], SGen.GetFluxCapacity()),
 			(120, -10), gzflags | sb.DI_TEXT_ALIGN_LEFT, Font.CR_DARKBROWN, scale: (0.5, 0.5));
