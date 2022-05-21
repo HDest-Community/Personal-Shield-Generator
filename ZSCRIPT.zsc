@@ -163,12 +163,6 @@ class HDPersonalShieldGenerator : HDWeapon
 	// UI
 	// -----------------------------------------------------------------
 
-	override int GetSbarNum(int flags)
-	{
-		HDStatusBar(StatusBar).SavedColour = Enabled ? Font.CR_GREEN : (WeaponStatus[PSProp_Flags] & PSF_Overloaded ? Font.CR_RED : Font.CR_YELLOW);
-		return int((WeaponStatus[PSProp_Flux] / double(GetFluxCapacity())) * 100);
-	}
-
 	override string PickupMessage()
 	{
 		string elemStr = WeaponStatus[PSProp_Flags] & PSF_Elemental ? "n elementally protective" : "";
@@ -436,7 +430,7 @@ class HDPersonalShieldGenerator : HDWeapon
 			invoker.Enabled = !invoker.Enabled;
 			if (invoker.Enabled)
 			{
-				invoker.owner.GiveInventoryType('HDPersonalShield');
+				invoker.owner.A_GiveInventory('HDPersonalShield');
 			}
 		}
 		invoker.owner.A_StartSound("PSG/Toggle", 9, pitch: invoker.Enabled ? 1.0 : 0.8);
@@ -717,7 +711,7 @@ class HDPersonalShield : HDDamageHandler
 
 	override int, Name, int, int, int, int, int HandleDamage(int damage, Name mod, int flags, Actor inflictor, Actor source, int towound, int toburn, int tostun, int tobreak)
 	{
-		if (!owner || (flags & (DMG_NO_FACTOR | DMG_FORCED)) || !inflictor || inflictor == owner || inflictor is "HDBulletActor" || mod == 'bleedout' || mod == 'hot' || mod == 'cold' || mod == 'maxhpdrain' || mod == 'internal' || mod == 'holy' || mod == 'jointlock' || mod == 'staples')
+		if (Amount == 0 || !owner || (flags & (DMG_NO_FACTOR | DMG_FORCED)) || !inflictor || inflictor == owner || inflictor is "HDBulletActor" || mod == 'bleedout' || mod == 'hot' || mod == 'cold' || mod == 'maxhpdrain' || mod == 'internal' || mod == 'holy' || mod == 'jointlock' || mod == 'staples')
 		{
 			return damage, mod, flags, towound, toburn, tostun, tobreak;
 		}
@@ -740,7 +734,7 @@ class HDPersonalShield : HDDamageHandler
 
 	override double, double OnBulletImpact(HDBulletActor bullet, double pen, double penshell, double hitangle, double deemedwidth, vector3 hitpos, vector3 vu, bool hitactoristall)
 	{
-		if (!owner || !bullet || AbsAngle(owner.angle, owner.AngleTo(bullet)) > SGen.GetShieldArc() / 2.0)
+		if (Amount == 0 || !owner || !bullet || AbsAngle(owner.angle, owner.AngleTo(bullet)) > SGen.GetShieldArc() / 2.0)
 		{
 			return pen, penshell;
 		}
@@ -768,6 +762,12 @@ class HDPersonalShield : HDDamageHandler
 
 	override void DoEffect()
 	{
+		if (Amount == 0)
+		{
+			ShieldArc = 0;
+			return;
+		}
+
 		if (SGen)
 		{
 			ShieldColor = SGen.GetShieldColor();
@@ -786,7 +786,7 @@ class HDPersonalShield : HDDamageHandler
 			if (!SGen)
 			{
 				ShieldDown(ShieldArc);
-				Destroy();
+				Amount = 0;
 				return;
 			}
 		}
@@ -794,7 +794,7 @@ class HDPersonalShield : HDDamageHandler
 		if (!SGen.Enabled)
 		{
 			ShieldDown(ShieldArc);
-			Destroy();
+			Amount = 0;
 			return;
 		}
 
@@ -952,7 +952,7 @@ class HDPersonalShield : HDDamageHandler
 		sb.DrawImage(SGen.GetPickupSprite(), (100, -3), gzflags | sb.DI_ITEM_LEFT_BOTTOM, box: (20, -1));
 
 		string colSoft = SGen.Enabled ? (SGen.WeaponStatus[SGen.PSProp_Flags] & SGen.PSF_Overloaded ? "\c[DarkRed]" : "\c[DarkGreen]") : "\c[Yellow]";
-		string colHard = SGen.Enabled ? (SGen.WeaponStatus[SGen.PSProp_Flags] & SGen.PSF_Overloaded ? "\c[Red]" : "\c[Green]") : "\c[Yellow]";
+		string colHard = SGen.Enabled ? (SGen.WeaponStatus[SGen.PSProp_Flags] & SGen.PSF_Overloaded ? "\c[Red]" : "\c[Green]") : "\c[Gold]";
 		sb.DrawString(sb.pNewSmallFont,
 			String.Format("%s%i\c-/%s%i\c-/\c[Cyan]%i\c-", colSoft, SGen.WeaponStatus[SGen.PSProp_Flux], colHard, SGen.WeaponStatus[SGen.PSProp_HardFlux], SGen.GetFluxCapacity()),
 			(120, -10), gzflags | sb.DI_TEXT_ALIGN_LEFT, Font.CR_DARKBROWN, scale: (0.5, 0.5));
