@@ -976,6 +976,7 @@ class HDPersonalShield : HDDamageHandler
 		Inventory.MaxAmount 1;
 		+INVENTORY.KEEPDEPLETED
 		-INVENTORY.INVBAR
+		+NOINTERACTION
 		HDDamageHandler.Priority 10002; // [Ace] Handle it before the shield from Arcanum.
 	}
 }
@@ -999,6 +1000,7 @@ class ShieldShieldlet : Actor
 		+NOINTERACTION
 		+NOBLOCKMAP
 		Renderstyle "AddShaded";
+		+BRIGHT
 		+WALLSPRITE
 		Alpha 1.0;
 		Scale 0.07;
