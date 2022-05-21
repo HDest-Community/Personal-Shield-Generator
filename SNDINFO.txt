@@ -10,3 +10,6 @@ PSG/ShieldBreak PSGSLDBR
 
 PSG/ShieldBlock PSGBLOCK
 $pitchset PSG/ShieldBlock 0.90 1.05
+
+PSG/VentFlux PSGVENT
+$pitchset PSG/VentFlux 1.05
