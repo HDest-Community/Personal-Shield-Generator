@@ -166,29 +166,13 @@ class HDPersonalShieldGenerator : HDWeapon
 	// UI
 	// -----------------------------------------------------------------
 
-	override int GetSbarNum(int flags)
-	{
-		HDStatusBar(StatusBar).SavedColour = Enabled ? Font.CR_GREEN : (WeaponStatus[PSProp_Flags] & PSF_Overloaded ? Font.CR_RED : Font.CR_YELLOW);
-		return int((WeaponStatus[PSProp_Flux] / double(GetFluxCapacity())) * 100);
-	}
-
-	override int DisplayAmount()
-	{
-		if (!Enabled)
-		{
-			return actualamount;
-		}
-
-		HDStatusBar(StatusBar).SavedColour = Font.CR_RED;
-		return int((WeaponStatus[PSProp_HardFlux] / double(GetFluxCapacity())) * 100);
-	}
-
 	override string PickupMessage()
 	{
 		string elemStr = WeaponStatus[PSProp_Flags] & PSF_Elemental ? "n elementally protective" : "";
+		string clkStr = WeaponStatus[PSProp_Flags] & PSF_Cloaking ? "cloak-enabled " : "";
 		string regenStr = WeaponStatus[PSProp_Flags] & PSF_Medical ? "medical " : "";
 		string shkStr = WeaponStatus[PSProp_Flags] & PSF_Shocking ? " with a shocking field" : "";
-		return String.Format("You picked up a%s %spersonal shield generator%s.", elemStr, regenStr, shkStr);
+		return String.Format("You picked up a%s %s%spersonal shield generator%s.", elemStr, clkStr, regenStr, shkStr);
 	}
 
 	override void DrawHUDStuff(HDStatusBar sb, HDWeapon hdw, HDPlayerPawn hpl)
@@ -953,7 +937,7 @@ class HDPersonalShield : HDDamageHandler
 
 	override void DrawHUDStuff(HDStatusBar sb, HDPlayerPawn hpl, int hdflags, int gzflags)
 	{
-		if (hdflags & HDSB_AUTOMAP || !SGen || hpl.InvSel is 'HDPersonalShieldGenerator')
+		if (hdflags & HDSB_AUTOMAP || !SGen)
 		{
 			return;
 		}
@@ -966,7 +950,7 @@ class HDPersonalShield : HDDamageHandler
 		int hardFluxPerc = int(ceil((SGen.WeaponStatus[SGen.PSProp_HardFlux] / fluxCap) * 100));
 
 		int col = SGen.Enabled ? Font.CR_GREEN : (SGen.WeaponStatus[SGen.PSProp_Flags] & SGen.PSF_Overloaded ? Font.CR_RED : Font.CR_YELLOW);
-		sb.DrawString(sb.pNewSmallFont, String.Format("\c[Green]%i\c-%%/\c[Red]%i\c-%%", fluxPerc, hardFluxPerc), (120, -10), gzflags | sb.DI_TEXT_ALIGN_LEFT, Font.CR_DARKGRAY, scale: (0.5, 0.5));
+		sb.DrawString(sb.pNewSmallFont, String.Format("\c[Green]%i\c-/\c[Red]%i\c-", fluxPerc, hardFluxPerc), (120, -10), gzflags | sb.DI_TEXT_ALIGN_LEFT, Font.CR_DARKBROWN, scale: (0.5, 0.5));
 
 		for (int i = 0; i < 3; ++i)
 		{
