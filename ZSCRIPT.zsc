@@ -548,7 +548,7 @@ class HDPersonalShieldGenerator : HDWeapon
 
 	clearscope double GetFluxDissipationRate(bool raw = false) const
 	{
-		double base = 1.0 + 0.1 * WeaponStatus[PSProp_UpgradePoints];
+		double base = 2.0 + 0.20 * WeaponStatus[PSProp_UpgradePoints];
 		if (raw)
 		{
 			return base;
