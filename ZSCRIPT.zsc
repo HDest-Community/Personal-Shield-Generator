@@ -549,7 +549,7 @@ class HDPersonalShieldGenerator : HDWeapon
 
 	clearscope int GetFluxCapacity() const
 	{
-		return BaseFluxCap + 300 * WeaponStatus[PSProp_UpgradePoints];
+		return BaseFluxCap + 200 * WeaponStatus[PSProp_UpgradePoints];
 	}
 
 	clearscope double GetFluxDissipationRate(bool raw = false) const
@@ -574,7 +574,7 @@ class HDPersonalShieldGenerator : HDWeapon
 		return WeaponStatus[PSProp_Mode] == 1 ? 120 : 360;
 	}
 
-	const BaseFluxCap = 1500;
+	const BaseFluxCap = 1000;
 	const PointsPerTier = 5;
 	const Tiers = 7; // [Ace] Actually Tiers + 1 because it's zero-based, so Tier 0 counts as Tier 1.
 	static const string ArcDegrees[] = { "([]------):\c[Green] 360 deg\c-", "(------[]):\c[Red] 120 deg\c-" };
