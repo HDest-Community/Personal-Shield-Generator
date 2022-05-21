@@ -115,7 +115,7 @@ class HDPersonalShieldGenerator : HDWeapon
 	{
 		if (other.player && other.player.ReadyWeapon is 'HDPersonalShieldGenerator' && other.player.cmd.buttons & BT_FIREMODE)
 		{
-			if (WeaponStatus[PSProp_Degradation] > 10)
+			if (WeaponStatus[PSProp_Degradation] > 15)
 			{
 				other.A_Log("Shield generator is too damaged to be used for parts.", true);
 				return;	
@@ -561,7 +561,7 @@ class HDPersonalShieldGenerator : HDWeapon
 		}
 
 		double minBatteryFac = ((WeaponStatus[PSProp_Battery1] + WeaponStatus[PSProp_Battery2] + WeaponStatus[PSProp_Battery3]) / 3.0) / 20.0;
-		return max(0.05, base * minBatteryFac * (Enabled ? 0.7 : 1.0) - 0.20 * WeaponStatus[PSProp_Degradation]);
+		return max(0.05, base * minBatteryFac * (Enabled ? 0.7 : 1.0) - 0.15 * WeaponStatus[PSProp_Degradation]);
 	}
 
 	clearscope bool CanCloak() const
