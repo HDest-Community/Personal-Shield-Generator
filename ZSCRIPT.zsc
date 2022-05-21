@@ -290,6 +290,34 @@ class HDPersonalShieldGenerator : HDWeapon
 	{
 		Super.Tick();
 
+		if (!CoreHandler)
+		{
+			CoreHandler = AceCoreHandler(EventHandler.Find('AceCoreHandler'));
+		}
+
+		for (int i = 0; i < CoreHandler.Requests.Size(); ++i)
+		{
+			InterfaceRequest req = CoreHandler.Requests[i];
+			if (req.Receiver == self)
+			{
+				switch (req.RequestName)
+				{
+					case 'OverloadPsg':
+					{
+						BuildUpFlux(GetFluxCapacity(), GetFluxCapacity());
+						req.Remove(); i--;
+						break;
+					}
+					case 'VentFlux':
+					{
+						VentFlux(GetFluxCapacity(), GetFluxCapacity());
+						req.Remove(); i--;
+						break;
+					}
+				}
+			}
+		}
+
 		Icon = TexMan.CheckForTexture(GetPickupSprite(), TexMan.Type_Any);
 		ReactionTime--;
 
@@ -340,34 +368,6 @@ class HDPersonalShieldGenerator : HDWeapon
 			Enabled = false;
 		}
 
-		if (!CoreHandler)
-		{
-			CoreHandler = AceCoreHandler(EventHandler.Find('AceCoreHandler'));
-		}
-
-		for (int i = 0; i < CoreHandler.Requests.Size(); ++i)
-		{
-			InterfaceRequest req = CoreHandler.Requests[i];
-			if (req.Receiver == self)
-			{
-				switch (req.RequestName)
-				{
-					case 'OverloadPsg':
-					{
-						BuildUpFlux(GetFluxCapacity(), GetFluxCapacity());
-						req.Remove(); i--;
-						break;
-					}
-					case 'VentFlux':
-					{
-						VentFlux(GetFluxCapacity(), GetFluxCapacity());
-						req.Remove(); i--;
-						break;
-					}
-				}
-			}
-		}
-
 		if (!owner)
 		{
 			return;
@@ -387,7 +387,7 @@ class HDPersonalShieldGenerator : HDWeapon
 				{
 					plr.woundcount--;
 					plr.unstablewoundcount++;
-					BuildUpFlux(10, 1);
+					BuildUpFlux(20, 2);
 				}
 				if (owner.Health < (plr ? plr.MaxHealth() : owner.GetMaxHealth()))
 				{
@@ -396,13 +396,13 @@ class HDPersonalShieldGenerator : HDWeapon
 						HDMobBase(owner).BodyDamage--;
 					}
 					owner.GiveBody(1);
-					BuildUpFlux(10, 1);
+					BuildUpFlux(20, 2);
 				}
 			}
 			if (plr && GetAge() % 280 == 0 && plr.burncount > 0)
 			{
 				plr.burncount--;
-				BuildUpFlux(20, 2);
+				BuildUpFlux(40, 5);
 			}
 		}
 		if (WeaponStatus[PSProp_Flags] & PSF_Shocking && GetAge() % 5 == 0)
@@ -413,7 +413,7 @@ class HDPersonalShieldGenerator : HDWeapon
 				if (it.thing is 'Babuin' && it.thing.Health > 0 && Babuin(it.thing).latchtarget == owner)
 				{
 					it.thing.DamageMobj(self, owner, random(1, 20), 'Electrical');
-					BuildUpFlux(1);
+					BuildUpFlux(5);
 				}
 			}
 		}
@@ -425,7 +425,7 @@ class HDPersonalShieldGenerator : HDWeapon
 				owner.A_SetRenderStyle(0.2, STYLE_Translucent);
 				owner.bSHADOW = true;
 				owner.bCANTSEEK = true;
-				BuildUpFlux(1);
+				BuildUpFlux(4);
 			}
 			else
 			{
