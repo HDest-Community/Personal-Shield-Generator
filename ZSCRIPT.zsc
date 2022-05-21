@@ -739,7 +739,7 @@ class HDPersonalShield : HDDamageHandler
 			return pen, penshell;
 		}
 
-		double bulletpower = pen * bullet.mass * 0.2;
+		double bulletpower = pen * bullet.mass * 0.1;
 		if (bulletpower < 1)
 		{
 			bulletpower = int(frandom(0, 1) < bulletpower);
