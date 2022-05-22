@@ -454,6 +454,7 @@ class HDPersonalShieldGenerator : HDWeapon
 				invoker.owner.A_GiveInventory('HDPersonalShield');
 			}
 		}
+		invoker.owner.A_StopSound(18);
 		invoker.owner.A_StartSound("PSG/Toggle", 9, pitch: invoker.Enabled ? 1.0 : 0.8);
 		invoker.ReactionTime = 35;
 	}
