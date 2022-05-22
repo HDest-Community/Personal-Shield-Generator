@@ -1009,6 +1009,7 @@ class HDPersonalShield : HDDamageHandler
 		Inventory.MaxAmount 1;
 		+INVENTORY.KEEPDEPLETED
 		-INVENTORY.INVBAR
+		+INVENTORY.UNDROPPABLE
 		+NOINTERACTION
 		HDDamageHandler.Priority 10002; // [Ace] Handle it before the shield from Arcanum.
 	}
