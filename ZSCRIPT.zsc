@@ -555,14 +555,14 @@ class HDPersonalShieldGenerator : HDWeapon
 
 	clearscope double GetFluxDissipationRate(bool raw = false) const
 	{
-		double base = 1.0 + 0.1 * WeaponStatus[PSProp_UpgradePoints];
+		double base = 1.0 + 0.05 * WeaponStatus[PSProp_UpgradePoints];
 		if (raw)
 		{
 			return base;
 		}
 
 		double minBatteryFac = ((WeaponStatus[PSProp_Battery1] + WeaponStatus[PSProp_Battery2] + WeaponStatus[PSProp_Battery3]) / 3.0) / 20.0;
-		return max(0.05, base * minBatteryFac * (Enabled ? 0.7 : 1.0) - 0.15 * WeaponStatus[PSProp_Degradation]);
+		return max(0.05, base * minBatteryFac * (Enabled ? 0.5 : 1.0) - 0.15 * WeaponStatus[PSProp_Degradation]);
 	}
 
 	clearscope bool CanCloak() const
