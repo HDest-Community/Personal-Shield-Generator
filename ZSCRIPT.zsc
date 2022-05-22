@@ -784,23 +784,8 @@ class HDPersonalShield : HDDamageHandler
 
 	override void DoEffect()
 	{
-		if (Amount == 0)
-		{
-			ShieldArc = 0;
-			return;
-		}
-
-		if (SGen)
-		{
-			ShieldColor = SGen.GetShieldColor();
-
-			int LastArc = ShieldArc;
-			ShieldArc = SGen.GetShieldArc();
-			if (LastArc != ShieldArc)
-			{
-				ShieldUp(ShieldArc);
-			}
-		}
+		Inventory.DoEffect();
+		ShieldletCount = 0;
 
 		if (!SGen || !SGen.owner)
 		{
@@ -813,16 +798,27 @@ class HDPersonalShield : HDDamageHandler
 			}
 		}
 
+		if (Amount == 0)
+		{
+			ShieldArc = 0;
+			return;
+		}
+
+		ShieldColor = SGen.GetShieldColor();
+
+		int LastArc = ShieldArc;
+		ShieldArc = SGen.GetShieldArc();
+		if (LastArc != ShieldArc)
+		{
+			ShieldUp(ShieldArc);
+		}
+
 		if (!SGen.Enabled)
 		{
 			ShieldDown(ShieldArc);
 			Amount = 0;
 			return;
 		}
-
-		ShieldletCount = 0;
-
-		Super.DoEffect();
 	}
 
 	// -----------------------------------------------------------------
@@ -831,6 +827,11 @@ class HDPersonalShield : HDDamageHandler
 
 	private void ShieldDown(int arc)
 	{
+		if (Amount == 0)
+		{
+			return;
+		}
+
 		owner.A_StartSound("PSG/ShieldBreak", CHAN_BODY, CHANF_OVERLAP, 0.75);
 
 		ShieldShieldlet sp = null;
