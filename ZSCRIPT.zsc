@@ -807,7 +807,7 @@ class HDPersonalShield : HDDamageHandler
 			if (!SGen)
 			{
 				ShieldDown(ShieldArc);
-				Amount = 0;
+				Destroy();
 				return;
 			}
 		}
@@ -970,7 +970,7 @@ class HDPersonalShield : HDDamageHandler
 
 	override void DrawHUDStuff(HDStatusBar sb, HDPlayerPawn hpl, int hdflags, int gzflags)
 	{
-		if (hdflags & HDSB_AUTOMAP || !SGen || !SGen.owner)
+		if (hdflags & HDSB_AUTOMAP || !SGen)
 		{
 			return;
 		}
