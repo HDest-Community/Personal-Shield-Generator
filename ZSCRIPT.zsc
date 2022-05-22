@@ -197,13 +197,13 @@ class HDPersonalShieldGenerator : HDWeapon
 			// Check the battery.
 			// What's a tery?
 			// *slap*
-			int tery = hdw.WeaponStatus[PSProp_Battery1 + i];
+			int tery = WeaponStatus[PSProp_Battery1 + i];
 			if (tery > -1)
 			{
 				string icon; int fontCol;
 				[icon, fontCol] = AceCore.GetBatteryColor(tery);
 				sb.DrawImage(icon, (-24, -11 + 15 * i) + bob, sb.DI_SCREEN_CENTER | sb.DI_ITEM_RIGHT | sb.DI_ITEM_VCENTER, box: (-1, 15));
-				sb.DrawString(sb.mAmountFont, sb.FormatNumber(hdw.WeaponStatus[PSProp_Battery1 + i], 1, 2), (-22, -8 + 15 * i) + bob, sb.DI_SCREEN_CENTER | sb.DI_TEXT_ALIGN_RIGHT, fontCol);
+				sb.DrawString(sb.mAmountFont, sb.FormatNumber(WeaponStatus[PSProp_Battery1 + i], 1, 2), (-22, -8 + 15 * i) + bob, sb.DI_SCREEN_CENTER | sb.DI_TEXT_ALIGN_RIGHT, fontCol);
 			}
 		}
 
