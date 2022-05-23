@@ -167,13 +167,25 @@ class HDPersonalShieldGenerator : HDWeapon
 
 	override void AttachToOwner(Actor other)
 	{
-		A_StopSound(18);
 		Super.AttachToOwner(other);
+		Inventory sld = other.GiveInventoryType('HDPersonalShield');
+		sld.Amount = 0; // [Ace] Start disabled.
+		A_StopSound(18);
 	}
 
 	// -----------------------------------------------------------------
 	// UI
 	// -----------------------------------------------------------------
+
+	override int GetSbarNum(int flags)
+	{
+		if (owner && !owner.player)
+		{
+			HDStatusBar(StatusBar).SavedColour = Enabled ? Font.CR_DARKGREEN : (WeaponStatus[PSProp_Flags] & PSF_Overloaded ? Font.CR_RED : Font.CR_YELLOW);
+			return int((WeaponStatus[PSProp_Flux] / double(GetFluxCapacity())) * 100);
+		}
+		return Super.GetSbarNum(flags);
+	}
 
 	override string PickupMessage()
 	{
@@ -317,10 +329,23 @@ class HDPersonalShieldGenerator : HDWeapon
 		Icon = TexMan.CheckForTexture(GetPickupSprite(), TexMan.Type_Any);
 		ReactionTime--;
 
-		// [Ace] Owner is an NPC, assume they're intelligent enough to know how to turn it on.
+		// [Ace] Owner is an NPC, assume they're intelligent enough to know how to operate it.
 		if (owner && !owner.player)
 		{
-			Enabled = true;
+			if (!(WeaponStatus[PSProp_Flags] & PSF_Overloaded))
+			{
+				// [Ace] Do a fake overload to prevent the dumbass from clicking the button like a retard.
+				// This also simulates manually turning off the shield to prevent overloading.
+				if (WeaponStatus[PSProp_Flux] >= GetFluxCapacity() * 0.75)
+				{
+					A_ToggleShield();
+					WeaponStatus[PSProp_Flags] |= PSF_Overloaded;
+				}
+				else if (!Enabled)
+				{
+					A_ToggleShield();
+				}
+			}
 		}
 
 		if (WeaponStatus[PSProp_Flags] & PSF_Overloaded)
@@ -451,7 +476,7 @@ class HDPersonalShieldGenerator : HDWeapon
 			invoker.Enabled = !invoker.Enabled;
 			if (invoker.Enabled)
 			{
-				invoker.owner.A_GiveInventory('HDPersonalShield');
+				invoker.owner.A_SetInventory('HDPersonalShield', 1);
 			}
 		}
 		invoker.owner.A_StopSound(18);
@@ -562,7 +587,7 @@ class HDPersonalShieldGenerator : HDWeapon
 		}
 
 		double minBatteryFac = ((WeaponStatus[PSProp_Battery1] + WeaponStatus[PSProp_Battery2] + WeaponStatus[PSProp_Battery3]) / 3.0) / 20.0;
-		return max(0.05, base * minBatteryFac * (Enabled ? 0.5 : 1.0) - 0.15 * WeaponStatus[PSProp_Degradation]);
+		return max(0.05, base * minBatteryFac * (WeaponStatus[PSProp_Flags] & PSF_Overloaded ? 1.5 : 1) * (Enabled ? 0.5 : 1.0) - 0.15 * WeaponStatus[PSProp_Degradation]);
 	}
 
 	clearscope bool CanCloak() const
@@ -798,8 +823,13 @@ class HDPersonalShield : HDDamageHandler
 			}
 		}
 
-		if (Amount == 0)
+		if (!SGen.Enabled)
 		{
+			if (Amount == 1)
+			{
+				ShieldDown(ShieldArc);
+				Amount = 0;
+			}
 			ShieldArc = 0;
 			return;
 		}
@@ -811,13 +841,6 @@ class HDPersonalShield : HDDamageHandler
 		if (LastArc != ShieldArc)
 		{
 			ShieldUp(ShieldArc);
-		}
-
-		if (!SGen.Enabled)
-		{
-			ShieldDown(ShieldArc);
-			Amount = 0;
-			return;
 		}
 	}
 
