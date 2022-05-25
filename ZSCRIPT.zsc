@@ -64,7 +64,7 @@ class HDPersonalShieldGenerator : HDWeapon
 	override HDWeapon GetSpareWeapon(actor newowner , bool reverse, bool doselect) { return GetSpareWeaponRegular(newowner, reverse, doselect); }
 	override string, double GetPickupSprite()
 	{
-		string main = "PSG"..min(Tiers, (WeaponStatus[PSProp_UpgradePoints] / PointsPerTier));
+		string main = "PSG"..min(Tiers, (WeaponStatus[PSProp_UpgradePoints]));
 		return main..(GetBatteriesLoaded(1) > 0 && Enabled ? "B" : "A").."0", 0.2;
 	}
 	override string GetHelpText()
@@ -77,7 +77,7 @@ class HDPersonalShieldGenerator : HDWeapon
 	}
 	override double WeaponBulk()
 	{
-		return 20 + 10 * min(Tiers, (WeaponStatus[PSProp_UpgradePoints] / PointsPerTier)) + GetBatteriesLoaded() * ENC_BATTERY_LOADED;
+		return 20 + 10 * min(Tiers, (WeaponStatus[PSProp_UpgradePoints])) + GetBatteriesLoaded() * ENC_BATTERY_LOADED;
 	}
 	override void LoadoutConfigure(string input)
 	{
@@ -85,7 +85,7 @@ class HDPersonalShieldGenerator : HDWeapon
 		int points = GetLoadoutVar(input, "points", 2);
 		if (points > 0)
 		{
-			WeaponStatus[PSProp_UpgradePoints] = clamp(points, 1, Tiers * PointsPerTier);
+			WeaponStatus[PSProp_UpgradePoints] = clamp(points, 1, Tiers);
 		}
 		if (GetLoadoutVar(input, "elem", 1) > 0)
 		{
@@ -126,10 +126,10 @@ class HDPersonalShieldGenerator : HDWeapon
 
 			int pointsRemaining = WeaponStatus[PSProp_UpgradePoints] + 1;
 
-			int toSpend = min(pointsRemaining, Tiers * PointsPerTier - gen.WeaponStatus[PSProp_UpgradePoints]);
-			gen.WeaponStatus[PSProp_UpgradePoints] += toSpend;
+			int toUpgrade = min(pointsRemaining, Tiers - gen.WeaponStatus[PSProp_UpgradePoints]);
+			gen.WeaponStatus[PSProp_UpgradePoints] += toUpgrade;
 
-			pointsRemaining -= toSpend;
+			pointsRemaining -= toUpgrade;
 			if (pointsRemaining > 0)
 			{
 				gen.WeaponStatus[PSProp_Degradation] = max(0, gen.WeaponStatus[PSProp_Degradation] - pointsRemaining);
@@ -403,7 +403,7 @@ class HDPersonalShieldGenerator : HDWeapon
 
 		if (WeaponStatus[PSProp_Flags] & PSF_Elemental)
 		{
-			owner.A_SetInventory('HDFireDouse', max(owner.CountInv('HDFireDouse'), 4));
+			owner.A_SetInventory('HDFireDouse', max(owner.CountInv('HDFireDouse'), 5));
 		}
 		if (WeaponStatus[PSProp_Flags] & PSF_Medical)
 		{
@@ -431,9 +431,9 @@ class HDPersonalShieldGenerator : HDWeapon
 				BuildUpFlux(40, 5);
 			}
 		}
-		if (WeaponStatus[PSProp_Flags] & PSF_Shocking && GetAge() % 5 == 0)
+		if (WeaponStatus[PSProp_Flags] & PSF_Shocking && GetAge() % 4 == 0)
 		{
-			BlockThingsIterator it = BlockThingsIterator.Create(owner, owner.radius * 2);
+			BlockThingsIterator it = BlockThingsIterator.Create(owner, owner.radius * 1.5);
 			while (it.Next())
 			{
 				if (it.thing is 'Babuin' && it.thing.Health > 0 && Babuin(it.thing).latchtarget == owner)
@@ -546,7 +546,7 @@ class HDPersonalShieldGenerator : HDWeapon
 
 	clearscope int GetShieldColor()
 	{
-		switch (WeaponStatus[PSProp_UpgradePoints] / PointsPerTier)
+		switch (WeaponStatus[PSProp_UpgradePoints])
 		{
 			default: return 0xFFFFFF;
 			case 0: return 0xFF1111;
@@ -575,12 +575,12 @@ class HDPersonalShieldGenerator : HDWeapon
 
 	clearscope int GetFluxCapacity() const
 	{
-		return BaseFluxCap + 200 * WeaponStatus[PSProp_UpgradePoints];
+		return BaseFluxCap + 1000 * WeaponStatus[PSProp_UpgradePoints];
 	}
 
 	clearscope double GetFluxDissipationRate(bool raw = false) const
 	{
-		double base = 1.0 + 0.05 * WeaponStatus[PSProp_UpgradePoints];
+		double base = 1.0 + 0.20 * WeaponStatus[PSProp_UpgradePoints];
 		if (raw)
 		{
 			return base;
@@ -601,7 +601,6 @@ class HDPersonalShieldGenerator : HDWeapon
 	}
 
 	const BaseFluxCap = 1000;
-	const PointsPerTier = 5;
 	const Tiers = 7; // [Ace] Actually Tiers + 1 because it's zero-based, so Tier 0 counts as Tier 1.
 	static const string ArcDegrees[] = { "([]------):\c[Green] 360 deg\c-", "(------[]):\c[Red] 120 deg\c-" };
 	bool Enabled;
@@ -727,19 +726,8 @@ class PsgRandom : IdleDummy
 			TNT1 A 0 NoDelay
 			{
 				let psg = HDPersonalShieldGenerator(Spawn('HDPersonalShieldGenerator', pos));
-				for (int i = 0; i < psg.Tiers * psg.PointsPerTier; ++i)
-				{
-					if (random[psgrand](0, 1))
-					{
-						psg.WeaponStatus[psg.PSProp_UpgradePoints] = min(psg.Tiers * psg.PointsPerTier, psg.WeaponStatus[psg.PSProp_UpgradePoints] + randompick[psgrand](1, 1, 1, 1, 2));
-					}
-					else
-					{
-						break;
-					}
-				}
-
 				HDF.TransferSpecials(self, psg);
+
 				if (!random[psgrand](0, 5))
 				{
 					psg.WeaponStatus[psg.PSProp_Flags] |= (1 << random[psgrand](0, 3));
@@ -758,15 +746,15 @@ class HDPersonalShield : HDDamageHandler
 
 	override int, Name, int, int, int, int, int HandleDamage(int damage, Name mod, int flags, Actor inflictor, Actor source, int towound, int toburn, int tostun, int tobreak)
 	{
-		if (Amount == 0 || !owner || (flags & (DMG_NO_FACTOR | DMG_FORCED)) || !inflictor || inflictor == owner || inflictor is "HDBulletActor" || mod == 'bleedout' || mod == 'hot' || mod == 'cold' || mod == 'maxhpdrain' || mod == 'internal' || mod == 'holy' || mod == 'jointlock' || mod == 'staples')
+		// [Ace] The only reason for this break of consistency is because otherwise you'd need to prepare for the long and arduous journey to scroll horizontally.
+		if (Amount == 0 || !owner || (flags & (DMG_NO_FACTOR | DMG_FORCED)) || !inflictor || inflictor == owner || inflictor is 'HDBulletActor'
+			|| mod == 'bleedout' || mod == 'hot' || mod == 'cold' || mod == 'maxhpdrain' || mod == 'internal' || mod == 'holy' || mod == 'staples'
+			|| AbsAngle(owner.angle, owner.AngleTo(inflictor)) > SGen.GetShieldArc() / 2.0
+			|| source && owner.Distance3D(source) < (owner.radius + source.radius) * 1.5)
 		{
 			return damage, mod, flags, towound, toburn, tostun, tobreak;
 		}
 
-		if (AbsAngle(owner.angle, owner.AngleTo(inflictor)) > SGen.GetShieldArc() / 2.0)
-		{
-			return damage, mod, flags, towound, toburn, tostun, tobreak;
-		}
 
 		double reductionFac = ShieldArc / 360.0;
 		int blocked = max(1, int(damage * reductionFac));
@@ -774,7 +762,7 @@ class HDPersonalShield : HDDamageHandler
 		bool supereffective = (mod == 'BFGBallAttack' || mod == 'electrical' || mod == 'balefire');
 		SGen.BuildUpFlux(blocked, int(blocked * (supereffective ? 0.75 : 0.25)));
 
-		SpawnImpactWeave(inflictor.pos);
+		SpawnImpactWeave(inflictor.pos + (0, 0, inflictor.height / 2.0));
 
 		return 0, mod, flags, towound, toburn, tostun, tobreak;
 	}
