@@ -857,7 +857,7 @@ class HDPersonalShield : HDDamageHandler
 					continue;
 				}
 
-				vector3 spawnPos = (owner.Vec2Angle(owner.radius * 1.5, owner.angle + (a - arc / 2.0 + AngleIncrease / M_PI) + (shift ? AngleIncrease / 2.0 : 0)), owner.pos.z + owner.height / 2);
+				vector3 spawnPos = (owner.Vec2Angle(owner.radius * 1.5, owner.angle + (a - arc / 2.0 + ShieldletSizeShift) + (shift ? AngleIncrease / 2.0 : 0)), owner.pos.z + owner.height / 2);
 				if (h == 0)
 				{
 					sp = ShieldShieldlet(SpawnSegment('ShieldShieldlet', spawnPos));
@@ -888,7 +888,7 @@ class HDPersonalShield : HDDamageHandler
 		{
 			for (double a = 0; a < arc; a += AngleIncrease)
 			{
-				vector3 spawnPos = (owner.Vec2Angle(owner.radius * 1.5, owner.angle + (a - arc / 2.0 + AngleIncrease / M_PI) + (shift ? AngleIncrease / 2.0 : 0)), owner.pos.z + owner.height / 2);
+				vector3 spawnPos = (owner.Vec2Angle(owner.radius * 1.5, owner.angle + (a - arc / 2.0 + ShieldletSizeShift) + (shift ? AngleIncrease / 2.0 : 0)), owner.pos.z + owner.height / 2);
 				if (h == 0)
 				{
 					sp = ShieldShieldlet(SpawnSegment('ShieldShieldlet', spawnPos));
@@ -1009,6 +1009,7 @@ class HDPersonalShield : HDDamageHandler
 	// [Ace] These are calculated to work with the the current sprite scale, size, and distance. If any of these are incorrect, problems will happen.
 	const HeightIncrease = 1.6;
 	const AngleIncrease = 18;
+	const ShieldletSizeShift = 35 * 0.10 - 1.5;
 	private bool IsShieldUp;
 	private int ShieldColor;
 	private int ShieldArc;
