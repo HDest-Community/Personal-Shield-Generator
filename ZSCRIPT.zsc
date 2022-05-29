@@ -401,10 +401,6 @@ class HDPersonalShieldGenerator : HDWeapon
 
 		let plr = HDPlayerPawn(owner);
 
-		if (WeaponStatus[PSProp_Flags] & PSF_Elemental)
-		{
-			owner.A_SetInventory('HDFireDouse', max(owner.CountInv('HDFireDouse'), 5));
-		}
 		if (WeaponStatus[PSProp_Flags] & PSF_Medical)
 		{
 			if (GetAge() % 25 == 0)
@@ -746,25 +742,29 @@ class HDPersonalShield : HDDamageHandler
 
 	override int, Name, int, int, int, int, int HandleDamage(int damage, Name mod, int flags, Actor inflictor, Actor source, int towound, int toburn, int tostun, int tobreak)
 	{
-		// [Ace] The only reason for this break of consistency is because otherwise you'd need to prepare for the long and arduous journey to scroll horizontally.
-		if (Amount == 0 || !owner || (flags & (DMG_NO_FACTOR | DMG_FORCED)) || !inflictor || !source || inflictor == owner || inflictor is 'HDBulletActor'
-			|| mod == 'bleedout' || mod == 'hot' || mod == 'cold' || mod == 'maxhpdrain' || mod == 'internal' || mod == 'holy' || mod == 'staples'
+		bool env = SGen.WeaponStatus[SGen.PSProp_Flags] & SGen.PSF_Elemental;
+
+		// [Ace] The only reason for this break of code styling consistency is because otherwise you'd need to prepare for the long and arduous journey to scroll horizontally.
+		if (Amount == 0 || !owner || (flags & (DMG_NO_FACTOR | DMG_FORCED)) || !inflictor || inflictor == owner || inflictor is 'HDBulletActor'
+			|| mod == 'bleedout' || (!env && (mod == 'hot' || mod == 'cold')) || mod == 'maxhpdrain' || mod == 'internal' || mod == 'holy' || mod == 'staples'
 			|| AbsAngle(owner.angle, owner.AngleTo(inflictor)) > SGen.GetShieldArc() / 2.0
-			|| owner.Distance3D(source) < (owner.radius + source.radius) * 1.5)
+			|| source && owner.Distance3D(source) < (owner.radius + source.radius) * 1.5)
 		{
 			return damage, mod, flags, towound, toburn, tostun, tobreak;
 		}
 
-
 		double reductionFac = ShieldArc / 360.0;
 		int blocked = max(1, int(damage * reductionFac));
 
-		bool supereffective = (mod == 'BFGBallAttack' || mod == 'electrical' || mod == 'balefire');
+		bool supereffective = (mod == 'BFGBallAttack' || mod == 'electrical' || mod == 'balefire' || mod == 'hot' || mod == 'cold');
 		SGen.BuildUpFlux(blocked, int(blocked * (supereffective ? 0.75 : 0.25)));
 
-		SpawnImpactWeave(inflictor.pos + (0, 0, inflictor.height / 2.0));
+		if (inflictor.bMISSILE)
+		{
+			SpawnImpactWeave(inflictor.pos + (0, 0, inflictor.height / 2.0));
+		}
 
-		return 0, mod, flags, towound, toburn, tostun, tobreak;
+		return 0, mod, flags, 0, 0, 0, 0;
 	}
 
 	override double, double OnBulletImpact(HDBulletActor bullet, double pen, double penshell, double hitangle, double deemedwidth, vector3 hitpos, vector3 vu, bool hitactoristall)

@@ -7,7 +7,7 @@
 - Loadout code is `psg`.
 - Configuration codes are:
 	- `points`: Start with this many upgrade points.
-	- `elem`: Shield will help extinguish fire.
+	- `elem`: Shield fully absorbs any elemental projectiles and generated heat, at the cost of dealing higher hard flux damage. This upgrade only works for heat in 360 degrees mode as fire is omnidirectional.
 	- `medical`: Shield will help close wounds, regenerate health, and heal burns.
 	- `shock`: Shield will damage latched babuins and eventually kill them.
 	- `cloak`: Bravo six, going dark. Cloaks you if below 25% flux. Side effect is that it hides your sights. Disabling the shield also disables cloaking.
