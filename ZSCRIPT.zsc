@@ -168,8 +168,7 @@ class HDPersonalShieldGenerator : HDWeapon
 	override void AttachToOwner(Actor other)
 	{
 		Super.AttachToOwner(other);
-		Inventory sld = other.GiveInventoryType('HDPersonalShield');
-		sld.Amount = 0; // [Ace] Start disabled.
+		other.A_GiveInventory('HDPersonalShield');
 		A_StopSound(18);
 	}
 
@@ -736,6 +735,12 @@ class PsgRandom : IdleDummy
 
 class HDPersonalShield : HDDamageHandler
 {
+	override void AttachToOwner(Actor other)
+	{
+		Amount = 0;
+		Super.AttachToOwner(other);
+	}
+
 	// -----------------------------------------------------------------
 	// DAMAGE HANDLING
 	// -----------------------------------------------------------------

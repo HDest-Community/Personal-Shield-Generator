@@ -24,5 +24,4 @@
 - The generator has two modes: full-coverage and frontal. The former makes you virtually impervious to attacks, but shields will take 100% damage, meaning faster flux build-up. Frontal shield makes you open to flanking, but damage to shields is greatly reduced.
 - The generator is designed to work with three full batteries. The more charges the batteries are missing, the bigger the penalties to flux dissipation rate.
 - Shields block all damage completely.
-- Multiple shield generators do not stack due to interference.
 - Hold Firemode with your PSG selected when picking up another generator to consume the item and gain upgrade points. This is a passive bonus.
