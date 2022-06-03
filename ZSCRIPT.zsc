@@ -429,7 +429,7 @@ class HDPersonalShieldGenerator : HDWeapon
 		}
 		if (WeaponStatus[PSProp_Flags] & PSF_Shocking && GetAge() % 4 == 0)
 		{
-			BlockThingsIterator it = BlockThingsIterator.Create(owner, owner.radius * 1.5);
+			BlockThingsIterator it = BlockThingsIterator.Create(owner, owner.default.radius * 1.5);
 			while (it.Next())
 			{
 				if (it.thing is 'Babuin' && it.thing.Health > 0 && Babuin(it.thing).latchtarget == owner)
@@ -888,7 +888,7 @@ class HDPersonalShield : HDDamageHandler
 		{
 			for (double a = 0; a < arc; a += AngleIncrease)
 			{
-				vector3 spawnPos = (owner.Vec2Angle(owner.radius * 1.5, owner.angle + (a - arc / 2.0 + ShieldletSizeShift) + (shift ? AngleIncrease / 2.0 : 0)), owner.pos.z + owner.height / 2);
+				vector3 spawnPos = (owner.Vec2Angle(owner.default.radius * 1.5, owner.angle + (a - arc / 2.0 + ShieldletSizeShift) + (shift ? AngleIncrease / 2.0 : 0)), owner.pos.z + owner.height / 2);
 				if (h == 0)
 				{
 					sp = ShieldShieldlet(SpawnSegment('ShieldShieldlet', spawnPos));
@@ -960,7 +960,7 @@ class HDPersonalShield : HDDamageHandler
 		vector2 randomShift = (frandom(5.0, 5.0), frandom(-4.0, 4.0));
 		for (int i = 0; i < spawnHeights.Size(); ++i)
 		{
-			vector3 hexPos = (owner.Vec2Angle(owner.radius * 1.5, centerAngle + spawnAngles[i] + randomShift.x), spawnPos.z + spawnHeights[i] + randomShift.y);
+			vector3 hexPos = (owner.Vec2Angle(owner.default.radius * 1.5, centerAngle + spawnAngles[i] + randomShift.x), spawnPos.z + spawnHeights[i] + randomShift.y);
 			ShieldShieldlet sp = ShieldShieldlet(SpawnSegment('ShieldShieldlet', hexPos));
 			sp.bREFLECTIVE = true; sp.Alpha = spawnAlphas[i]; sp.PeakAlpha = 0.75; sp.InSpeed = 0.5; sp.OutSpeed = 0.20;
 		}
