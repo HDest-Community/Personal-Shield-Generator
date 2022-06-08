@@ -161,6 +161,7 @@ class HDPersonalShieldGenerator : HDWeapon
 
 	override void DetachFromOwner()
 	{
+		UnCloak();
 		owner.A_StopSound(18);
 		Super.DetachFromOwner();
 	}
@@ -280,7 +281,7 @@ class HDPersonalShieldGenerator : HDWeapon
 		}
 		if (WeaponStatus[PSProp_Flags] & PSF_Cloaking)
 		{
-			string onOff = Enabled && CanCloak() ? "\c[Green]ON\c-" : "\c[Red]OFF\c-";
+			string onOff = CanCloak() ? "\c[Green]ON\c-" : "\c[Red]OFF\c-";
 			sb.DrawString(sb.pSmallFont, "CLK: "..onOff, pos + bob, sb.DI_SCREEN_CENTER | sb.DI_TEXT_ALIGN_LEFT, Font.CR_WHITE);
 			pos.y += 10;
 		}
@@ -384,6 +385,7 @@ class HDPersonalShieldGenerator : HDWeapon
 			{
 				ptr.A_StopSound(18);
 			}
+			UnCloak();
 			return;
 		}
 		
@@ -438,20 +440,12 @@ class HDPersonalShieldGenerator : HDWeapon
 				}
 			}
 		}
-		if (WeaponStatus[PSProp_Flags] & PSF_Cloaking)
+		if (WeaponStatus[PSProp_Flags] & PSF_Cloaking && CanCloak())
 		{
-			if (CanCloak())
-			{
-				IsCloaked = true;
-				owner.A_SetRenderStyle(0.2, STYLE_Translucent);
-				owner.bSHADOW = true;
-				owner.bCANTSEEK = true;
-				BuildUpFlux(4);
-			}
-			else
-			{
-				UnCloak();
-			}
+			IsCloaked = true;
+			owner.A_SetRenderStyle(0.2, STYLE_Translucent);
+			owner.bSHADOW = true;
+			owner.bCANTSEEK = true;
 		}
 	}
 
@@ -582,12 +576,16 @@ class HDPersonalShieldGenerator : HDWeapon
 		}
 
 		double minBatteryFac = ((WeaponStatus[PSProp_Battery1] + WeaponStatus[PSProp_Battery2] + WeaponStatus[PSProp_Battery3]) / 3.0) / 20.0;
-		return max(0.05, base * minBatteryFac * (WeaponStatus[PSProp_Flags] & PSF_Overloaded ? 1.5 : 1) * (Enabled ? 0.5 : 1.0) - 0.15 * WeaponStatus[PSProp_Degradation]);
+		double overloadFac = WeaponStatus[PSProp_Flags] & PSF_Overloaded ? 1.5 : 1;
+		double enabledFac = Enabled ? 0.5 : 1.0;
+		double cloakFac = CanCloak() ? 0.75 : 1.0;
+		double degAmt = 0.15 * WeaponStatus[PSProp_Degradation];
+		return max(0.05, base * minBatteryFac * overloadFac * enabledFac * cloakFac - degAmt);
 	}
 
 	clearscope bool CanCloak() const
 	{
-		return WeaponStatus[PSProp_Flux] < GetFluxCapacity() * 0.25;
+		return Enabled && WeaponStatus[PSProp_HardFlux] < GetFluxCapacity() * 0.25;
 	}
 
 	clearscope int GetShieldArc() const
