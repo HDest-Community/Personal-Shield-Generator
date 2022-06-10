@@ -316,6 +316,12 @@ class HDPersonalShieldGenerator : HDWeapon
 						req.Remove(); i--;
 						break;
 					}
+					case 'InflictEmpDamage':
+					{
+						BuildUpFlux(req.Arg.ToInt(), req.Arg.ToInt());
+						req.Remove(); i--;
+						break;
+					}
 					case 'VentFlux':
 					{
 						VentFlux(GetFluxCapacity(), GetFluxCapacity());
