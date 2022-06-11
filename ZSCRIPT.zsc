@@ -389,7 +389,7 @@ class HDPersonalShieldGenerator : HDWeapon
 				for (int i = 0; i < 2; ++i)
 				{
 					Actor a; bool success;
-					[success, a] = ptr.A_SpawnItemEx('FluxSmoke', ptr.radius, 0, random(0, ptr.height), frandom(4.0, 5.0), 0, 0, random(0, 359), SXF_NOCHECKPOSITION);
+					[success, a] = ptr.A_SpawnItemEx('FluxSmoke', ptr.radius, 0, frandom(0, ptr.height), frandom(4.0, 5.0), 0, 0, random(0, 359), SXF_NOCHECKPOSITION);
 					if (success)
 					{
 						a.SetShade(GetShieldColor());
