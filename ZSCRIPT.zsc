@@ -416,7 +416,7 @@ class HDPersonalShieldGenerator : HDWeapon
 				{
 					plr.woundcount--;
 					plr.unstablewoundcount++;
-					BuildUpFlux(20, 2);
+					BuildUpFlux(15, 3);
 				}
 				if (owner.Health < (plr ? plr.MaxHealth() : owner.GetMaxHealth()))
 				{
@@ -425,10 +425,10 @@ class HDPersonalShieldGenerator : HDWeapon
 						HDMobBase(owner).BodyDamage--;
 					}
 					owner.GiveBody(1);
-					BuildUpFlux(20, 2);
+					BuildUpFlux(15, 3);
 				}
 			}
-			if (plr && GetAge() % 280 == 0 && plr.burncount > 0)
+			if (plr && GetAge() % 250 == 0 && plr.burncount > 0)
 			{
 				plr.burncount--;
 				BuildUpFlux(40, 5);
