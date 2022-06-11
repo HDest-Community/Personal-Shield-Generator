@@ -755,9 +755,9 @@ class HDPersonalShield : HDDamageHandler
 
 		// [Ace] The only reason for this break of code styling consistency is because otherwise you'd need to prepare for the long and arduous journey to scroll horizontally.
 		if (Amount == 0 || !owner || (flags & (DMG_NO_FACTOR | DMG_FORCED)) || !inflictor || inflictor == owner || inflictor is 'HDBulletActor'
-			|| mod == 'bleedout' || (!env && (mod == 'hot' || mod == 'cold')) || mod == 'maxhpdrain' || mod == 'internal' || mod == 'holy' || mod == 'staples'
+			|| mod == 'bleedout' || (!env && (mod == 'hot' || mod == 'cold')) || mod == 'maxhpdrain' || mod == 'internal' || mod == 'holy' || mod == 'staples' || mod == 'Slime'
 			|| AbsAngle(owner.angle, owner.AngleTo(inflictor)) > SGen.GetShieldArc() / 2.0
-			|| source && source.bISMONSTER && owner.Distance3D(source) < (owner.radius + source.radius) * 1.5)
+			|| source && source.bISMONSTER && owner.Distance2D(source) < (owner.radius + source.radius) * 1.5)
 		{
 			/*
 			if ((mod == 'hot' || mod == 'cold')) { Console.Printf("env"); }
