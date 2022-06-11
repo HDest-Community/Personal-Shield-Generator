@@ -542,7 +542,6 @@ class HDPersonalShieldGenerator : HDWeapon
 					ptr.A_StartSound("world/tbfar", 14);
 				}
 			}
-			ptr.A_GiveInventory('Heat', 300);
 		}
 	}
 
