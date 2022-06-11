@@ -386,6 +386,15 @@ class HDPersonalShieldGenerator : HDWeapon
 			if (WeaponStatus[PSProp_Flux] > 0)
 			{
 				ptr.A_StartSound("PSG/VentFlux", 18, CHANF_LOOPING);
+				for (int i = 0; i < 2; ++i)
+				{
+					Actor a; bool success;
+					[success, a] = ptr.A_SpawnItemEx('FluxSmoke', ptr.radius, 0, random(0, ptr.height), frandom(4.0, 5.0), 0, 0, random(0, 359), SXF_NOCHECKPOSITION);
+					if (success)
+					{
+						a.SetShade(GetShieldColor());
+					}
+				}
 			}
 			else
 			{
@@ -439,10 +448,18 @@ class HDPersonalShieldGenerator : HDWeapon
 			BlockThingsIterator it = BlockThingsIterator.Create(owner, owner.default.radius * 1.5);
 			while (it.Next())
 			{
-				if (it.thing is 'Babuin' && it.thing.Health > 0 && Babuin(it.thing).latchtarget == owner)
+				if (it.thing.Health > 0)
 				{
-					it.thing.DamageMobj(self, owner, random(1, 20), 'Electrical');
-					BuildUpFlux(5);
+					if (it.thing is 'Babuin' && Babuin(it.thing).latchtarget == owner)
+					{
+						it.thing.DamageMobj(self, owner, random(1, 20), 'Electrical');
+						BuildUpFlux(5);
+					}
+					if (it.thing is 'NinjaPirate' && NinjaPirate(it.thing).CurState.InStateSequence(FindState('Latch')))
+					{
+						it.thing.DamageMobj(self, owner, random(15, 30), 'Electrical');
+						BuildUpFlux(10, 2);
+					}
 				}
 			}
 		}
@@ -1087,5 +1104,17 @@ class ShieldShieldlet : Actor
 				}
 			}
 			Loop;
+	}
+}
+
+class FluxSmoke : ACESmokeBase
+{
+	Default
+	{
+		Renderstyle "Shaded";
+		ACESmokeBase.GrowSpeed 0.008, 0.0085;
+		ACESmokeBase.FadeSpeed 0.01, 0.015;
+		ACESmokeBase.StopSpeed 0.88, 0.88;
+		Scale 0.05;
 	}
 }
