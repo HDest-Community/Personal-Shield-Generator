@@ -371,7 +371,7 @@ class HDPersonalShieldGenerator : HDWeapon
 		{
 			int toVentSoft = int(DissipationFrac);
 			int toVentHard = 0;
-			if (!Enabled)
+			if (!Enabled && WeaponStatus[PSProp_Flux] == WeaponStatus[PSProp_HardFlux])
 			{
 				toVentHard = toVentSoft;
 			}
@@ -591,14 +591,14 @@ class HDPersonalShieldGenerator : HDWeapon
 
 	clearscope double GetFluxDissipationRate(bool raw = false) const
 	{
-		double base = 1.0 + 0.20 * WeaponStatus[PSProp_UpgradePoints];
+		double base = 1.0 + 0.25 * WeaponStatus[PSProp_UpgradePoints];
 		if (raw)
 		{
 			return base;
 		}
 
 		double minBatteryFac = ((WeaponStatus[PSProp_Battery1] + WeaponStatus[PSProp_Battery2] + WeaponStatus[PSProp_Battery3]) / 3.0) / 20.0;
-		double overloadFac = WeaponStatus[PSProp_Flags] & PSF_Overloaded ? 1.5 : 1;
+		double overloadFac = WeaponStatus[PSProp_Flags] & PSF_Overloaded ? 2.0 : 1;
 		double enabledFac = Enabled ? 0.5 : 1.0;
 		double cloakFac = CanCloak() ? 0.75 : 1.0;
 		double degAmt = 0.15 * WeaponStatus[PSProp_Degradation];
