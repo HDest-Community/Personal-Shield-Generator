@@ -318,7 +318,10 @@ class HDPersonalShieldGenerator : HDWeapon
 					}
 					case 'InflictEmpDamage':
 					{
-						BuildUpFlux(req.Arg.ToInt(), req.Arg.ToInt());
+						if (Enabled)
+						{
+							BuildUpFlux(req.Arg.ToInt(), req.Arg.ToInt());
+						}
 						req.Remove(); i--;
 						break;
 					}
