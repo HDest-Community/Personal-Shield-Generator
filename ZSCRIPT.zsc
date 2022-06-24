@@ -296,6 +296,11 @@ class HDPersonalShieldGenerator : HDWeapon
 
 	override void Tick()
 	{
+		if (IsFrozen())
+		{
+			return;
+		}
+
 		Super.Tick();
 
 		if (!CoreHandler)
@@ -397,6 +402,10 @@ class HDPersonalShieldGenerator : HDWeapon
 					{
 						a.SetShade(GetShieldColor());
 					}
+				}
+				if (GetAge() % 7 == 0)
+				{
+					HDActor.HDBlast(ptr, immolateradius: HDCONST_ONEMETRE * 1.5, immolateamount: 50);
 				}
 			}
 			else
