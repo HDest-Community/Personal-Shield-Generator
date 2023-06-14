@@ -198,7 +198,7 @@ class HDPersonalShieldGenerator : HDWeapon
 
 	override void DrawHUDStuff(HDStatusBar sb, HDWeapon hdw, HDPlayerPawn hpl)
 	{
-		vector2 bob = hpl.hudbob * 0.3;
+		vector2 bob = hpl.wepbob * 0.3;
 		int Offset = WeaponStatus[PSProp_UseOffset];
 		bob.y += Offset;
 		
@@ -433,10 +433,10 @@ class HDPersonalShieldGenerator : HDWeapon
 		{
 			if (GetAge() % 25 == 0)
 			{
-				if (plr && plr.woundcount > 0)
+				if (plr && plr.oldwoundcount > 0)
 				{
-					plr.woundcount--;
-					plr.unstablewoundcount++;
+					plr.oldwoundcount--;
+					plr.burncount++;
 					BuildUpFlux(15, 3);
 				}
 				if (owner.Health < (plr ? plr.MaxHealth() : owner.GetMaxHealth()))
@@ -777,7 +777,7 @@ class HDPersonalShield : HDDamageHandler
 	// DAMAGE HANDLING
 	// -----------------------------------------------------------------
 
-	override int, Name, int, int, int, int, int HandleDamage(int damage, Name mod, int flags, Actor inflictor, Actor source, int towound, int toburn, int tostun, int tobreak)
+	override int, Name, int, double, int, int, int HandleDamage(int damage, Name mod, int flags, Actor inflictor, Actor source, double towound, int toburn, int tostun, int tobreak)
 	{
 		bool env = SGen.WeaponStatus[SGen.PSProp_Flags] & SGen.PSF_Elemental;
 
